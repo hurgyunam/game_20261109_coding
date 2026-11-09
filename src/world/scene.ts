@@ -6,9 +6,12 @@ import { createState, type State, type Tree } from '../core/state'
 import { images } from './assets'
 import { createCamera } from './camera'
 import type { GameHooks } from './game'
-import { createControlReader, type Action } from './input'
+import { createControlReader, type Action, type Pointer } from './input'
 
 const maxFrameSeconds = 0.1
+const holdRepeatSeconds = 0.2
+const reachDistance = 120
+const reachDot = 0.6
 
 const treeSpots = [
   [0.575, 0.378],
@@ -36,6 +39,8 @@ export class WorldScene extends Phaser.Scene {
   private view!: ReturnType<typeof createCamera>
   private hooks!: GameHooks
   private treeSprites = new Map<string, Phaser.GameObjects.Image>()
+  private nextStrike = 0
+  private facing = { x: 1, y: 0 }
 
   constructor() {
     super('world')
@@ -70,9 +75,29 @@ export class WorldScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     const control = this.controls.read()
-    for (const action of this.controls.consume()) this.applyAction(action)
+    const pointer = this.controls.pointer()
+    let struck = false
+    for (const action of this.controls.consume()) {
+      if (action.type === 'inventory') {
+        this.hooks.onInventory()
+        continue
+      }
+      if (action.type === 'use') {
+        const treeId = this.treeAhead()
+        if (treeId) this.chopTree(treeId)
+        struck = true
+        continue
+      }
+      this.applyAction(action)
+      if (action.type === 'click') struck = true
+    }
 
     const dt = Math.min(delta, maxFrameSeconds * 1000) / 1000
+    if (control.move.x !== 0 || control.move.y !== 0) {
+      const length = Math.hypot(control.move.x, control.move.y)
+      this.facing = { x: control.move.x / length, y: control.move.y / length }
+    }
+    this.repeatStrike(pointer, control.use, struck, dt)
     const next = move(this.state, control.move, dt)
     if (next !== this.state) this.state = next
 
@@ -84,6 +109,26 @@ export class WorldScene extends Phaser.Scene {
     this.view.update(control.look, follow, dt)
   }
 
+  private repeatStrike(pointer: Pointer, use: boolean, struck: boolean, dt: number) {
+    if (!pointer.down && !use) {
+      this.nextStrike = 0
+      return
+    }
+    if (struck) {
+      this.nextStrike = holdRepeatSeconds
+      return
+    }
+    this.nextStrike -= dt
+    const treeId = (pointer.down ? this.treeAt(pointer.x, pointer.y) : null) ?? (use ? this.treeAhead() : null)
+    if (this.nextStrike > 0 || !treeId) return
+    this.nextStrike = holdRepeatSeconds
+    this.chopTree(treeId)
+  }
+
+  private chopTree(treeId: string) {
+    if (handItem(this.state)?.itemId === 'stone-axe') this.commit(chop(this.state, treeId))
+  }
+
   private applyAction(action: Action) {
     if (action.type === 'selectSlot') {
       this.commit(selectSlot(this.state, action.slot))
@@ -92,7 +137,22 @@ export class WorldScene extends Phaser.Scene {
 
     const treeId = this.treeAt(action.x, action.y)
     if (!treeId) return
-    if (handItem(this.state)?.itemId === 'stone-axe') this.commit(chop(this.state, treeId))
+    this.chopTree(treeId)
+  }
+
+  private treeAhead() {
+    let found: { id: string; distance: number } | null = null
+    for (const tree of this.state.trees) {
+      const sprite = this.treeSprites.get(tree.id)
+      const dx = tree.x - this.player.x
+      const dy = tree.y - (sprite?.displayHeight ?? 0) * 0.45 - this.player.y
+      const distance = Math.hypot(dx, dy)
+      if (distance === 0 || distance > reachDistance) continue
+      const dot = (dx / distance) * this.facing.x + (dy / distance) * this.facing.y
+      if (dot < reachDot) continue
+      if (!found || distance < found.distance) found = { id: tree.id, distance }
+    }
+    return found?.id ?? null
   }
 
   private commit(next: State) {

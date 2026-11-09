@@ -8,6 +8,7 @@ export type GameApi = {
 
 export type GameHooks = {
   onState: (state: State) => void
+  onInventory: () => void
   bind: (api: GameApi) => void
 }
 

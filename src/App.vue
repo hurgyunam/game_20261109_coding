@@ -18,6 +18,9 @@ onMounted(() => {
     onState: (next) => {
       state.value = next
     },
+    onInventory: () => {
+      inventoryOpen.value = !inventoryOpen.value
+    },
     bind: (bound) => {
       api = bound
     },

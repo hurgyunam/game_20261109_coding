@@ -27,6 +27,7 @@ export const defs = {
   inventory: {
     slots: 9,
     limit: 20,
+    slowdown: 0.5,
   },
   tree: {
     hits: 3,

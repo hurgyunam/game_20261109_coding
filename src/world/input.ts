@@ -4,15 +4,25 @@ import type { Direction } from '../core/move'
 export type Control = {
   move: Direction
   look: Direction
+  use: boolean
 }
 
 export type Action =
   | { type: 'selectSlot'; slot: number }
   | { type: 'click'; x: number; y: number }
+  | { type: 'inventory' }
+  | { type: 'use' }
+
+export type Pointer = {
+  down: boolean
+  x: number
+  y: number
+}
 
 const idle: Control = {
   move: { x: 0, y: 0 },
   look: { x: 0, y: 0 },
+  use: false,
 }
 
 const digitNames = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'] as const
@@ -26,26 +36,45 @@ export function createControlReader(scene: Phaser.Scene) {
     actions.push({ type: 'click', x: pointer.worldX, y: pointer.worldY })
   })
 
+  const pointer = (): Pointer => {
+    const current = scene.input.activePointer
+    return {
+      down: current.leftButtonDown(),
+      x: current.worldX,
+      y: current.worldY,
+    }
+  }
+
   if (!keyboard) {
     return {
       read: () => idle,
       consume: () => actions.splice(0),
+      pointer,
     }
   }
 
   const cursors = keyboard.createCursorKeys()
   const walk = keyboard.addKeys('W,A,S,D') as Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>
+  const use = keyboard.addKey('E')
   keyboard.addCapture([
     'W',
     'A',
     'S',
     'D',
+    'E',
+    'I',
     cursors.left.keyCode,
     cursors.right.keyCode,
     cursors.up.keyCode,
     cursors.down.keyCode,
     ...digitNames.flatMap((name) => [name, `NUMPAD_${name}`]),
   ])
+  const tap = (type: 'inventory' | 'use') => (event: KeyboardEvent) => {
+    if (event.repeat) return
+    actions.push({ type })
+  }
+  keyboard.on('keydown-I', tap('inventory'))
+  keyboard.on('keydown-E', tap('use'))
 
   digitNames.forEach((name, index) => {
     const slot = index + 1
@@ -68,9 +97,11 @@ export function createControlReader(scene: Phaser.Scene) {
           x: axis(cursors.left.isDown, cursors.right.isDown),
           y: axis(cursors.up.isDown, cursors.down.isDown),
         },
+        use: use.isDown,
       }
     },
     consume: () => actions.splice(0),
+    pointer,
   }
 }
 
