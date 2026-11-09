@@ -34,8 +34,12 @@ export function createControlReader(scene: Phaser.Scene) {
   }
 
   const cursors = keyboard.createCursorKeys()
-  const look = keyboard.addKeys('W,A,S,D') as Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>
+  const walk = keyboard.addKeys('W,A,S,D') as Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>
   keyboard.addCapture([
+    'W',
+    'A',
+    'S',
+    'D',
     cursors.left.keyCode,
     cursors.right.keyCode,
     cursors.up.keyCode,
@@ -57,12 +61,12 @@ export function createControlReader(scene: Phaser.Scene) {
     read(): Control {
       return {
         move: {
-          x: axis(cursors.left.isDown, cursors.right.isDown),
-          y: axis(cursors.up.isDown, cursors.down.isDown),
+          x: axis(walk.A.isDown, walk.D.isDown),
+          y: axis(walk.W.isDown, walk.S.isDown),
         },
         look: {
-          x: axis(look.A.isDown, look.D.isDown),
-          y: axis(look.W.isDown, look.S.isDown),
+          x: axis(cursors.left.isDown, cursors.right.isDown),
+          y: axis(cursors.up.isDown, cursors.down.isDown),
         },
       }
     },
