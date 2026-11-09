@@ -18,6 +18,12 @@ export type Tree = {
   hits: number
 }
 
+export type Rabbit = {
+  id: string
+  x: number
+  y: number
+}
+
 export type State = {
   player: {
     x: number
@@ -38,12 +44,14 @@ export type State = {
   }
   skills: Record<SkillId, SkillState>
   trees: Tree[]
+  rabbits: Rabbit[]
 }
 
 export function createState(
   map: { width: number; height: number },
   body: { width: number; height: number },
   trees: Tree[],
+  rabbits: Rabbit[],
 ): State {
   const minX = body.width / 2
   const minY = body.height / 2
@@ -68,6 +76,7 @@ export function createState(
       SkillState
     >,
     trees: trees.map((tree) => ({ ...tree })),
+    rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
   }
 }
 

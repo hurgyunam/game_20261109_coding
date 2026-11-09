@@ -40,6 +40,12 @@ export const defs = {
     fur: { weight: 1 },
     'cooked-meat': { weight: 2 },
   },
+  drops: {
+    rabbit: [
+      { itemId: 'meat', count: 1 },
+      { itemId: 'fur', count: 1 },
+    ] as Stack[],
+  },
   recipes: {
     'stone-axe': {
       ingredients: [] as Stack[],
@@ -54,6 +60,7 @@ export const defs = {
     xp: {
       chop: 10,
       craft: 10,
+      hunt: 10,
     },
     thresholds: {
       gather: [] as SkillStep[],

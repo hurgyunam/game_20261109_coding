@@ -15,18 +15,18 @@
 - 바닥과 캐릭터는 교체 가능한 이미지 파일이다
 - 코어는 Phaser와 Vue를 import하지 않는다
 
-이 조각에서 만들지 않음: 클릭 판정, HUD, 아이템
+이 조각에서 만들지 않음: E 상호작용, HUD, 아이템
 
 ## 2. 도끼와 나무
 
-문서: `docs/core.md`의 `selectSlot`, `craft`, `chop`, `docs/world.md`의 숫자키·클릭, `docs/hud.md`의 `Hotbar`와 제작에 필요한 `InventoryPanel`
+문서: `docs/core.md`의 `selectSlot`, `craft`, `chop`, `docs/world.md`의 숫자키·E, `docs/hud.md`의 `Hotbar`와 제작에 필요한 `InventoryPanel`
 
 완료:
 
 - 숫자키 1–9로 핸드가 바뀌고 핫바에 현재 슬롯이 보인다
 - 맨손 레시피로 `stone-axe`를 만들어 슬롯에 넣는다
-- `stone-axe`를 든 채 나무를 클릭하면 나무가 사라지고 `log`가 인벤토리에 들어온다
-- 도끼가 아닌 핸드로 나무를 클릭하면 상태가 바뀌지 않는다
+- `stone-axe`를 든 채 나무를 바라보고 E를 누르면 나무가 사라지고 `log`가 인벤토리에 들어온다. E를 누르고 있으면 연타와 같이 같은 호출이 반복된다
+- 도끼가 아닌 핸드로 나무를 바라보고 E를 누르면 상태가 바뀌지 않는다
 
 이 조각에서 만들지 않음: 토끼, 건물, 중량 감속, 스킬 패널
 
@@ -44,35 +44,35 @@
 
 ## 4. 토끼 사냥
 
-문서: `docs/core.md`의 `hunt`, `docs/world.md`의 토끼 클릭
+문서: `docs/core.md`의 `hunt`, `docs/world.md`의 토끼를 향한 E
 
 완료:
 
-- `stone-axe`로 토끼를 클릭하면 토끼가 사라지고 `meat`와 `fur`가 들어온다
-- 도끼가 아닌 핸드로 토끼를 클릭하면 상태가 바뀌지 않는다
+- `stone-axe`로 토끼를 바라보고 E를 누르면 토끼가 사라지고 `meat`와 `fur`가 들어온다. E를 누르고 있으면 연타와 같이 같은 호출이 반복된다
+- 도끼가 아닌 핸드로 토끼를 바라보고 E를 누르면 상태가 바뀌지 않는다
 - 고기는 핫바 또는 인벤토리 패널에 보인다
 
 이 조각에서 만들지 않음: 조리, 스킬 패널
 
 ## 5. 건설
 
-문서: `docs/core.md`의 `stone-hammer` 레시피와 `place`, `docs/world.md`의 망치 클릭, `docs/hud.md`의 `BuildMenu`
+문서: `docs/core.md`의 `stone-hammer` 레시피와 `place`, `docs/world.md`의 망치와 E, `docs/hud.md`의 `BuildMenu`
 
 완료:
 
 - 맨손 레시피로 `stone-hammer`를 만든다
-- 망치를 들고 빈 타일을 클릭하면 건설 팝업이 열린다
+- 망치를 들고 빈 타일을 바라보고 E를 누르면 건설 팝업이 열린다. E를 누르고 있으면 연타와 같이 같은 알림이 반복된다
 - `warehouse` 또는 `campfire`를 고르면 그 좌표에 건물이 보이고 팝업이 닫힌다
 
 이 조각에서 만들지 않음: `transfer`, `cook`
 
 ## 6. 창고와 조리
 
-문서: `docs/core.md`의 `transfer`, `cook`, `docs/world.md`의 건물 클릭, `docs/hud.md`의 `StoragePanel`, `CampfirePanel`
+문서: `docs/core.md`의 `transfer`, `cook`, `docs/world.md`의 건물을 향한 E, `docs/hud.md`의 `StoragePanel`, `CampfirePanel`
 
 완료:
 
-- 창고를 클릭하면 패널이 열리고, 아이템이 캐릭터와 창고 사이를 오간다
+- 창고를 바라보고 E를 누르면 패널이 열리고, 아이템이 캐릭터와 창고 사이를 오간다. E를 누르고 있으면 연타와 같이 같은 알림이 반복된다
 - 창고 한도는 캐릭터 소지 한도보다 크다
 - 어느 쪽이든 한도를 넘는 옮기기는 적용되지 않는다
 - 캐릭터 총중량은 옮긴 뒤의 값을 표시한다

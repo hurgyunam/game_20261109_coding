@@ -1,4 +1,6 @@
+import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
+import meatUrl from '../../assets/meat.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
 import stoneHammerUrl from '../../assets/stone-hammer.png'
 import type { ItemId } from '../core/defs'
@@ -7,6 +9,8 @@ const icons: Partial<Record<ItemId, string>> = {
   log: logUrl,
   'stone-axe': stoneAxeUrl,
   'stone-hammer': stoneHammerUrl,
+  meat: meatUrl,
+  fur: furUrl,
 }
 
 const labels: Record<ItemId, string> = {
