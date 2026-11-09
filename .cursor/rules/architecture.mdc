@@ -13,7 +13,7 @@ alwaysApply: true
 
 화면 층에 게임 규칙을 복제하지 않는다. 아이템과 건물은 코어에서 id(`log`, `stone-axe`)로만 다루고, 이미지 경로는 world와 hud의 에셋 키에만 둔다.
 
-명세는 작업 중인 층만 본다.
+구현은 `todo.md`에서 지정된 조각 하나만 한다. 명세는 그 조각이 가리키는 층만 본다.
 
 - 코어: `docs/core.md`
 - 월드: `docs/world.md`
