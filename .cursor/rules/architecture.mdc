@@ -1,0 +1,29 @@
+---
+description: 게임 코어, Phaser 월드, Vue HUD의 의존 방향
+alwaysApply: true
+---
+
+# 레이어 경계
+
+코드는 아래 세 층으로만 나눈다. 함께 바뀌는 것끼리 둔다.
+
+- `src/core`: 상태와, 그 상태를 바꾸는 함수. Phaser와 Vue를 import하지 않는다.
+- `src/world`: Phaser. 맵, 카메라, 입력, 스프라이트. 코어 상태를 읽고 코어 함수만 호출한다.
+- `src/hud`: Vue. 핫바, 인벤토리, 건설 팝업, 창고, 모닥불, 스킬. 코어 함수만 호출한다.
+
+화면 층에 게임 규칙을 복제하지 않는다. 아이템과 건물은 코어에서 id(`log`, `stone-axe`)로만 다루고, 이미지 경로는 world와 hud의 에셋 키에만 둔다.
+
+명세는 작업 중인 층만 본다.
+
+- 코어: `docs/core.md`
+- 월드: `docs/world.md`
+- HUD: `docs/hud.md`
+
+```ts
+// src/core
+const next = chop(state, treeId)
+
+// src/world
+this.state = chop(this.state, treeId)
+this.render(this.state)
+```
