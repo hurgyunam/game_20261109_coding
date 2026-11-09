@@ -6,37 +6,68 @@ export type Control = {
   look: Direction
 }
 
+export type Action =
+  | { type: 'selectSlot'; slot: number }
+  | { type: 'click'; x: number; y: number }
+
 const idle: Control = {
   move: { x: 0, y: 0 },
   look: { x: 0, y: 0 },
 }
 
-export function createControlReader(scene: Phaser.Scene): () => Control {
+const digitNames = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'] as const
+
+export function createControlReader(scene: Phaser.Scene) {
   const keyboard = scene.input.keyboard
-  if (!keyboard) return () => idle
+  const actions: Action[] = []
+
+  scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    if (!pointer.leftButtonDown()) return
+    actions.push({ type: 'click', x: pointer.worldX, y: pointer.worldY })
+  })
+
+  if (!keyboard) {
+    return {
+      read: () => idle,
+      consume: () => actions.splice(0),
+    }
+  }
 
   const cursors = keyboard.createCursorKeys()
-  const look = keyboard.addKeys('W,A,S,D') as Record<
-    'W' | 'A' | 'S' | 'D',
-    Phaser.Input.Keyboard.Key
-  >
+  const look = keyboard.addKeys('W,A,S,D') as Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>
   keyboard.addCapture([
     cursors.left.keyCode,
     cursors.right.keyCode,
     cursors.up.keyCode,
     cursors.down.keyCode,
+    ...digitNames.flatMap((name) => [name, `NUMPAD_${name}`]),
   ])
 
-  return () => ({
-    move: {
-      x: axis(cursors.left.isDown, cursors.right.isDown),
-      y: axis(cursors.up.isDown, cursors.down.isDown),
-    },
-    look: {
-      x: axis(look.A.isDown, look.D.isDown),
-      y: axis(look.W.isDown, look.S.isDown),
-    },
+  digitNames.forEach((name, index) => {
+    const slot = index + 1
+    const press = (event: KeyboardEvent) => {
+      if (event.repeat) return
+      actions.push({ type: 'selectSlot', slot })
+    }
+    keyboard.on(`keydown-${name}`, press)
+    keyboard.on(`keydown-NUMPAD_${name}`, press)
   })
+
+  return {
+    read(): Control {
+      return {
+        move: {
+          x: axis(cursors.left.isDown, cursors.right.isDown),
+          y: axis(cursors.up.isDown, cursors.down.isDown),
+        },
+        look: {
+          x: axis(look.A.isDown, look.D.isDown),
+          y: axis(look.W.isDown, look.S.isDown),
+        },
+      }
+    },
+    consume: () => actions.splice(0),
+  }
 }
 
 function axis(negative: boolean, positive: boolean) {

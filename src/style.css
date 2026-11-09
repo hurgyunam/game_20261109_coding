@@ -8,3 +8,187 @@ body,
   overflow: hidden;
   background: #142018;
 }
+
+#app {
+  position: relative;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  color: #f4f0e4;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  user-select: none;
+}
+
+.hud button,
+.hotbar,
+.inventory {
+  pointer-events: auto;
+}
+
+.hotbar {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hand {
+  position: absolute;
+  left: 0;
+  top: -22px;
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.slots {
+  display: flex;
+  gap: 6px;
+}
+
+.slot {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 18, 14, 0.88);
+  border: 2px solid #3d5344;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.slot.selected {
+  border-color: #f2d48a;
+  transform: translateY(-8px);
+  box-shadow: 0 0 0 2px rgba(242, 212, 138, 0.35);
+}
+
+.slot .index,
+.slot .count {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #000;
+}
+
+.slot .index {
+  top: 2px;
+  left: 5px;
+  color: #d5e0d4;
+}
+
+.slot.selected .index {
+  color: #f2d48a;
+}
+
+.slot .count {
+  right: 5px;
+  bottom: 2px;
+}
+
+.slot img,
+.inventory img {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+}
+
+.bag,
+.inventory button {
+  border: 2px solid #3d5344;
+  background: rgba(10, 18, 14, 0.92);
+  color: #f4f0e4;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bag {
+  height: 58px;
+  padding: 0 14px;
+}
+
+.bag[aria-pressed='true'] {
+  border-color: #f2d48a;
+  color: #f2d48a;
+}
+
+.inventory {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 260px;
+  padding: 14px;
+  background: rgba(10, 18, 14, 0.94);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+}
+
+.inventory header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inventory h2,
+.inventory h3,
+.inventory p {
+  margin: 0;
+}
+
+.inventory h2 {
+  font-size: 16px;
+}
+
+.inventory h3 {
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.inventory header button {
+  padding: 4px 8px;
+}
+
+.weight {
+  margin-top: 8px;
+  color: #d5e0d4;
+  font-size: 13px;
+}
+
+.items {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.items li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.recipes {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recipes button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-align: left;
+}

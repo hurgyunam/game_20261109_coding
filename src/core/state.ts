@@ -1,4 +1,22 @@
-import { defs } from './defs'
+import { defs, skillIds, type ItemId, type SkillId } from './defs'
+
+export type Slot = {
+  itemId: ItemId
+  count: number
+} | null
+
+export type SkillState = {
+  xp: number
+  level: number
+  unlocked: string[]
+}
+
+export type Tree = {
+  id: string
+  x: number
+  y: number
+  hits: number
+}
 
 export type State = {
   player: {
@@ -12,11 +30,20 @@ export type State = {
     maxX: number
     maxY: number
   }
+  inventory: {
+    slots: Slot[]
+    hand: number
+    weight: number
+    limit: number
+  }
+  skills: Record<SkillId, SkillState>
+  trees: Tree[]
 }
 
 export function createState(
   map: { width: number; height: number },
   body: { width: number; height: number },
+  trees: Tree[],
 ): State {
   const minX = body.width / 2
   const minY = body.height / 2
@@ -30,5 +57,20 @@ export function createState(
       speed: defs.player.speed,
     },
     bounds: { minX, minY, maxX, maxY },
+    inventory: {
+      slots: Array.from({ length: defs.inventory.slots }, () => null),
+      hand: 1,
+      weight: 0,
+      limit: defs.inventory.limit,
+    },
+    skills: Object.fromEntries(skillIds.map((id) => [id, freshSkill()])) as Record<
+      SkillId,
+      SkillState
+    >,
+    trees: trees.map((tree) => ({ ...tree })),
   }
+}
+
+function freshSkill(): SkillState {
+  return { xp: 0, level: 1, unlocked: [] }
 }
