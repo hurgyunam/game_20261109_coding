@@ -1,4 +1,4 @@
-import { defs, skillIds, type ItemId, type SkillId } from './defs'
+import { defs, skillIds, type BuildingId, type ItemId, type SkillId } from './defs'
 
 export type Slot = {
   itemId: ItemId
@@ -24,6 +24,13 @@ export type Rabbit = {
   y: number
 }
 
+export type Building = {
+  id: string
+  kind: BuildingId
+  x: number
+  y: number
+}
+
 export type State = {
   player: {
     x: number
@@ -45,6 +52,7 @@ export type State = {
   skills: Record<SkillId, SkillState>
   trees: Tree[]
   rabbits: Rabbit[]
+  buildings: Building[]
 }
 
 export function createState(
@@ -77,6 +85,7 @@ export function createState(
     >,
     trees: trees.map((tree) => ({ ...tree })),
     rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
+    buildings: [],
   }
 }
 

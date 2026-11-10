@@ -12,6 +12,7 @@ export type Action =
   | { type: 'click'; x: number; y: number }
   | { type: 'inventory' }
   | { type: 'use' }
+  | { type: 'cancel' }
 
 export type Pointer = {
   down: boolean
@@ -32,7 +33,13 @@ export function createControlReader(scene: Phaser.Scene) {
   const actions: Action[] = []
 
   scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    if (pointer.rightButtonDown()) {
+      actions.push({ type: 'cancel' })
+      return
+    }
     if (!pointer.leftButtonDown()) return
+    const target = pointer.event && 'target' in pointer.event ? pointer.event.target : null
+    if (target !== scene.game.canvas) return
     actions.push({ type: 'click', x: pointer.worldX, y: pointer.worldY })
   })
 
@@ -63,6 +70,7 @@ export function createControlReader(scene: Phaser.Scene) {
     'D',
     'E',
     'I',
+    'ESC',
     cursors.left.keyCode,
     cursors.right.keyCode,
     cursors.up.keyCode,
@@ -75,6 +83,10 @@ export function createControlReader(scene: Phaser.Scene) {
   }
   keyboard.on('keydown-I', tap('inventory'))
   keyboard.on('keydown-E', tap('use'))
+  keyboard.on('keydown-ESC', (event: KeyboardEvent) => {
+    if (event.repeat) return
+    actions.push({ type: 'cancel' })
+  })
 
   digitNames.forEach((name, index) => {
     const slot = index + 1

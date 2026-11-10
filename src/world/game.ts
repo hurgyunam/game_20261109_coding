@@ -1,14 +1,18 @@
 import Phaser from 'phaser'
+import type { BuildingId } from '../core/defs'
 import type { State } from '../core/state'
 import { WorldScene } from './scene'
 
 export type GameApi = {
   apply: (state: State) => void
+  beginBuild: (buildingId: BuildingId) => void
 }
 
 export type GameHooks = {
   onState: (state: State) => void
   onInventory: () => void
+  onBuild: () => void
+  onBuildDone: () => void
   bind: (api: GameApi) => void
 }
 

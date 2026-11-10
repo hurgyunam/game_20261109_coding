@@ -10,6 +10,10 @@ export const recipeIds = ['stone-axe', 'stone-hammer'] as const
 
 export type RecipeId = (typeof recipeIds)[number]
 
+export const buildingIds = ['warehouse', 'campfire'] as const
+
+export type BuildingId = (typeof buildingIds)[number]
+
 export type Stack = {
   itemId: ItemId
   count: number

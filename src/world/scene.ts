@@ -1,9 +1,11 @@
 import Phaser from 'phaser'
+import { place } from '../core/build'
+import { buildingIds, type BuildingId } from '../core/defs'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
-import { createState, type Rabbit, type State, type Tree } from '../core/state'
+import { createState, type Building, type Rabbit, type State, type Tree } from '../core/state'
 import { images } from './assets'
 import { createCamera } from './camera'
 import type { GameHooks } from './game'
@@ -13,6 +15,7 @@ const maxFrameSeconds = 0.1
 const holdRepeatSeconds = 0.2
 const reachDistance = 120
 const reachDot = 0.6
+const tileSize = 64
 
 const treeSpots = [
   [0.575, 0.378],
@@ -55,6 +58,9 @@ export class WorldScene extends Phaser.Scene {
   private hooks!: GameHooks
   private treeSprites = new Map<string, Phaser.GameObjects.Image>()
   private rabbitSprites = new Map<string, Phaser.GameObjects.Image>()
+  private buildingSprites = new Map<string, Phaser.GameObjects.Image>()
+  private mapSize = { width: 0, height: 0 }
+  private ghost: { kind: BuildingId; sprite: Phaser.GameObjects.Image } | null = null
   private nextStrike = 0
   private facing = { x: 1, y: 0 }
 
@@ -72,6 +78,7 @@ export class WorldScene extends Phaser.Scene {
     const floor = this.add.image(0, 0, images.floor.key).setOrigin(0, 0)
     const player = this.add.image(0, 0, images.player.key)
     const map = { width: floor.width, height: floor.height }
+    this.mapSize = map
     this.state = createState(
       map,
       { width: player.width, height: player.height },
@@ -85,11 +92,15 @@ export class WorldScene extends Phaser.Scene {
     this.syncRabbits(this.state)
     this.view = createCamera(this.cameras.main, this.player, floor.width, floor.height)
     this.controls = createControlReader(this)
+    this.input.mouse?.disableContextMenu()
     this.hooks = this.game.registry.get('hooks') as GameHooks
     this.hooks.bind({
       apply: (next) => {
         const pose = this.state.player
         this.commit(next.player === pose ? next : { ...next, player: pose })
+      },
+      beginBuild: (buildingId) => {
+        this.beginBuild(buildingId)
       },
     })
     this.hooks.onState(this.state)
@@ -104,9 +115,16 @@ export class WorldScene extends Phaser.Scene {
         this.hooks.onInventory()
         continue
       }
+      if (action.type === 'cancel') {
+        this.finishGhost()
+        continue
+      }
       if (action.type === 'use') {
-        const target = this.ahead()
-        if (target) this.useTarget(target)
+        if (this.ghost) {
+          struck = true
+          continue
+        }
+        this.interact(this.ahead())
         struck = true
         continue
       }
@@ -129,9 +147,15 @@ export class WorldScene extends Phaser.Scene {
     else if (control.move.x > 0) this.player.setFlipX(false)
     const follow = control.move.x !== 0 || control.move.y !== 0
     this.view.update(control.look, follow, dt)
+    if (this.ghost && handItem(this.state)?.itemId !== 'stone-hammer') this.finishGhost()
+    else this.syncGhost(pointer)
   }
 
   private repeatStrike(pointer: Pointer, use: boolean, struck: boolean, dt: number) {
+    if (this.ghost) {
+      if (!pointer.down && !use) this.nextStrike = 0
+      return
+    }
     if (!pointer.down && !use) {
       this.nextStrike = 0
       return
@@ -141,11 +165,127 @@ export class WorldScene extends Phaser.Scene {
       return
     }
     this.nextStrike -= dt
+    if (this.nextStrike > 0) return
     const clicked = pointer.down ? this.treeAt(pointer.x, pointer.y) : null
     const target = clicked ? { kind: 'tree' as const, id: clicked } : use ? this.ahead() : null
-    if (this.nextStrike > 0 || !target) return
+    if (!target && !use) return
     this.nextStrike = holdRepeatSeconds
-    this.useTarget(target)
+    this.interact(target)
+  }
+
+  private interact(target: Aim | null) {
+    if (target) {
+      this.useTarget(target)
+      return
+    }
+    this.offerBuild()
+  }
+
+  private offerBuild() {
+    if (handItem(this.state)?.itemId !== 'stone-hammer') return
+    const tile = this.emptyTileAhead()
+    if (!tile) return
+    this.hooks.onBuild()
+  }
+
+  private beginBuild(buildingId: string) {
+    this.dropGhost()
+    if (handItem(this.state)?.itemId !== 'stone-hammer' || !isBuildingId(buildingId)) {
+      this.input.setDefaultCursor('default')
+      this.hooks.onBuildDone()
+      return
+    }
+    const sprite = this.add.image(0, 0, images[buildingId].key).setOrigin(0.5, 1).setAlpha(0.62)
+    sprite.setVisible(false)
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.28,
+      duration: 520,
+      yoyo: true,
+      repeat: -1,
+    })
+    this.ghost = { kind: buildingId, sprite }
+    this.input.setDefaultCursor('crosshair')
+    this.syncGhost(this.controls.pointer())
+  }
+
+  private syncGhost(pointer: Pointer) {
+    if (!this.ghost) return
+    const tile = this.tileAt(pointer.x, pointer.y)
+    const sprite = this.ghost.sprite
+    if (!tile) {
+      sprite.setVisible(false)
+      return
+    }
+    const open = !this.tileOccupied(tile.tileX, tile.tileY)
+    sprite.setVisible(true)
+    sprite.setPosition(tile.x, tile.y)
+    sprite.setDepth(tile.y + 1)
+    sprite.setTint(open ? 0xd8ffe4 : 0xffb0b0)
+  }
+
+  private confirmGhost(x: number, y: number) {
+    if (!this.ghost) return false
+    const tile = this.tileAt(x, y)
+    if (!tile || this.tileOccupied(tile.tileX, tile.tileY)) return true
+    const next = place(this.state, this.ghost.kind, tile.x, tile.y)
+    if (next === this.state) return true
+    this.finishGhost()
+    this.commit(next)
+    return true
+  }
+
+  private finishGhost() {
+    if (!this.ghost) return
+    this.dropGhost()
+    this.input.setDefaultCursor('default')
+    this.hooks.onBuildDone()
+  }
+
+  private dropGhost() {
+    if (!this.ghost) return
+    this.tweens.killTweensOf(this.ghost.sprite)
+    this.ghost.sprite.destroy()
+    this.ghost = null
+  }
+
+  private tileAt(x: number, y: number) {
+    const tileX = Math.floor(x / tileSize)
+    const tileY = Math.floor(y / tileSize)
+    const centerX = tileX * tileSize + tileSize / 2
+    const centerY = tileY * tileSize + tileSize / 2
+    const inside =
+      centerX >= tileSize / 2 &&
+      centerY >= tileSize / 2 &&
+      centerX <= this.mapSize.width - tileSize / 2 &&
+      centerY <= this.mapSize.height - tileSize / 2
+    if (!inside) return null
+    return { x: centerX, y: centerY, tileX, tileY }
+  }
+
+  private emptyTileAhead() {
+    const step = facingStep(this.facing)
+    const tileX = Math.floor(this.player.x / tileSize) + step.x
+    const tileY = Math.floor(this.player.y / tileSize) + step.y
+    const x = tileX * tileSize + tileSize / 2
+    const y = tileY * tileSize + tileSize / 2
+    const inside =
+      x >= tileSize / 2 &&
+      y >= tileSize / 2 &&
+      x <= this.mapSize.width - tileSize / 2 &&
+      y <= this.mapSize.height - tileSize / 2
+    if (!inside || this.tileOccupied(tileX, tileY)) return null
+    return { x, y }
+  }
+
+  private tileOccupied(tileX: number, tileY: number) {
+    const here = (x: number, y: number) =>
+      Math.floor(x / tileSize) === tileX && Math.floor(y / tileSize) === tileY
+    return (
+      this.state.trees.some((tree) => here(tree.x, tree.y)) ||
+      this.state.rabbits.some((rabbit) => here(rabbit.x, rabbit.y)) ||
+      this.state.buildings.some((building) => here(building.x, building.y))
+    )
   }
 
   private useTarget(target: Aim) {
@@ -161,6 +301,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (action.type !== 'click') return
+    if (this.confirmGhost(action.x, action.y)) return
     const treeId = this.treeAt(action.x, action.y)
     if (!treeId) return
     this.useTarget({ kind: 'tree', id: treeId })
@@ -210,6 +351,27 @@ export class WorldScene extends Phaser.Scene {
     this.player.setDepth(state.player.y)
     this.syncTrees(state)
     this.syncRabbits(state)
+    this.syncBuildings(state)
+  }
+
+  private syncBuildings(state: State) {
+    const alive = new Set(state.buildings.map((building) => building.id))
+    for (const [id, sprite] of this.buildingSprites) {
+      if (alive.has(id)) continue
+      this.buildingSprites.delete(id)
+      sprite.destroy()
+    }
+    for (const building of state.buildings) {
+      if (!this.buildingSprites.has(building.id)) this.spawnBuilding(building)
+    }
+  }
+
+  private spawnBuilding(building: Building) {
+    const sprite = this.add
+      .image(building.x, building.y, images[building.kind].key)
+      .setOrigin(0.5, 1)
+    sprite.setDepth(building.y)
+    this.buildingSprites.set(building.id, sprite)
   }
 
   private syncRabbits(state: State) {
@@ -367,6 +529,19 @@ function placeTrees(map: { width: number; height: number }): Tree[] {
     y: Math.round(y * map.height),
     hits: 0,
   }))
+}
+
+function isBuildingId(buildingId: string): buildingId is BuildingId {
+  return (buildingIds as readonly string[]).includes(buildingId)
+}
+
+function facingStep(facing: { x: number; y: number }) {
+  const snapped = Math.round(Math.atan2(facing.y, facing.x) / (Math.PI / 4))
+  const angle = snapped * (Math.PI / 4)
+  return {
+    x: Math.round(Math.cos(angle)),
+    y: Math.round(Math.sin(angle)),
+  }
 }
 
 function fallDirection(id: string) {

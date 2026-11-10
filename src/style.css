@@ -25,7 +25,8 @@ body,
 
 .hud button,
 .hotbar,
-.inventory {
+.inventory,
+.build-menu {
   pointer-events: auto;
 }
 
@@ -95,14 +96,17 @@ body,
 }
 
 .slot img,
-.inventory img {
+.inventory img,
+.build-menu img {
   width: 36px;
   height: 36px;
   image-rendering: pixelated;
+  object-fit: contain;
 }
 
 .bag,
-.inventory button {
+.inventory button,
+.build-menu button {
   border: 2px solid #3d5344;
   background: rgba(10, 18, 14, 0.92);
   color: #f4f0e4;
@@ -154,7 +158,8 @@ body,
   font-size: 14px;
 }
 
-.inventory header button {
+.inventory header button,
+.build-menu header button {
   padding: 4px 8px;
 }
 
@@ -190,5 +195,68 @@ body,
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
+  text-align: left;
+}
+
+.build-menu {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  width: 220px;
+  padding: 14px;
+  background: rgba(10, 18, 14, 0.94);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+}
+
+.build-menu header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.build-menu h2,
+.build-menu p {
+  margin: 0;
+}
+
+.build-menu h2 {
+  font-size: 16px;
+}
+
+.build-menu p {
+  margin-top: 10px;
+  color: #d5e0d4;
+  font-size: 13px;
+}
+
+.build-hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(10, 18, 14, 0.92);
+  border: 2px solid #3d5344;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.build-menu .choices {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.build-menu .choices button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
   text-align: left;
 }
