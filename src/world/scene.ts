@@ -46,7 +46,7 @@ const rabbitSpots = [
 ] as const
 
 type Aim = {
-  kind: 'tree' | 'rabbit'
+  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire'
   id: string
 }
 
@@ -63,6 +63,7 @@ export class WorldScene extends Phaser.Scene {
   private ghost: { kind: BuildingId; sprite: Phaser.GameObjects.Image } | null = null
   private nextStrike = 0
   private facing = { x: 1, y: 0 }
+  private campfireId: string | null = null
 
   constructor() {
     super('world')
@@ -143,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.player.setPosition(this.state.player.x, this.state.player.y)
     this.player.setDepth(this.state.player.y)
+    this.releaseCampfire()
     if (control.move.x < 0) this.player.setFlipX(true)
     else if (control.move.x > 0) this.player.setFlipX(false)
     const follow = control.move.x !== 0 || control.move.y !== 0
@@ -289,6 +291,15 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private useTarget(target: Aim) {
+    if (target.kind === 'warehouse') {
+      this.hooks.onWarehouse(target.id)
+      return
+    }
+    if (target.kind === 'campfire') {
+      this.campfireId = target.id
+      this.hooks.onCampfire(target.id)
+      return
+    }
     if (handItem(this.state)?.itemId !== 'stone-axe') return
     const next = target.kind === 'tree' ? chop(this.state, target.id) : hunt(this.state, target.id)
     this.commit(next)
@@ -307,11 +318,29 @@ export class WorldScene extends Phaser.Scene {
     this.useTarget({ kind: 'tree', id: treeId })
   }
 
+  private releaseCampfire() {
+    const id = this.campfireId
+    if (!id) return
+    const campfire = this.state.buildings.find((building) => building.id === id && building.kind === 'campfire')
+    if (campfire && this.beside(campfire.x, campfire.y, this.buildingSprites.get(campfire.id))) return
+    this.campfireId = null
+    this.hooks.onCampfireClose()
+  }
+
+  private beside(x: number, y: number, sprite?: Phaser.GameObjects.Image) {
+    const dx = x - this.player.x
+    const dy = y - (sprite?.displayHeight ?? 0) * 0.45 - this.player.y
+    return Math.hypot(dx, dy) <= reachDistance
+  }
+
   private ahead(): Aim | null {
     const spots = [
       ...this.state.trees.map((tree) => this.aimAt('tree', tree.id, tree.x, tree.y, this.treeSprites.get(tree.id))),
       ...this.state.rabbits.map((rabbit) =>
         this.aimAt('rabbit', rabbit.id, rabbit.x, rabbit.y, this.rabbitSprites.get(rabbit.id)),
+      ),
+      ...this.state.buildings.map((building) =>
+        this.aimAt(building.kind, building.id, building.x, building.y, this.buildingSprites.get(building.id)),
       ),
     ]
     let found: (Aim & { distance: number }) | null = null

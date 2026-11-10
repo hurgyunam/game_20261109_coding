@@ -1,5 +1,9 @@
-import { defs, type ItemId } from './defs'
-import type { Slot, State } from './state'
+import { defs, itemIds, type ItemId } from './defs'
+import type { Building, Slot, State } from './state'
+
+const transferWays = ['store', 'take'] as const
+
+export type TransferWay = (typeof transferWays)[number]
 
 export function selectSlot(state: State, slot: number): State {
   if (!Number.isInteger(slot) || slot < 1 || slot > state.inventory.slots.length) return state
@@ -63,4 +67,52 @@ export function withSlots(state: State, slots: Slot[]): State {
       weight: weightOf(slots),
     },
   }
+}
+
+export function transfer(
+  state: State,
+  warehouseId: string,
+  itemId: string,
+  count: number,
+  way: string,
+): State {
+  if (!isItem(itemId) || !isWay(way) || !Number.isInteger(count) || count <= 0) return state
+  const warehouse = state.buildings.find(
+    (building): building is Extract<Building, { kind: 'warehouse' }> =>
+      building.id === warehouseId && building.kind === 'warehouse',
+  )
+  if (!warehouse) return state
+
+  const intoStorage = way === 'store'
+  const source = intoStorage ? state.inventory.slots : warehouse.storage.slots
+  const destination = intoStorage ? warehouse.storage.slots : state.inventory.slots
+  const removed = removeItem(source, itemId, count)
+  if (!removed) return state
+  const added = addItem(destination, itemId, count)
+  if (!added) return state
+
+  const playerSlots = intoStorage ? removed : added
+  const storageSlots = intoStorage ? added : removed
+  const storageWeight = weightOf(storageSlots)
+  const carried = withSlots(state, playerSlots)
+  const destinationWeight = intoStorage ? storageWeight : carried.inventory.weight
+  const destinationLimit = intoStorage ? warehouse.storage.limit : carried.inventory.limit
+  if (destinationWeight > destinationLimit) return state
+
+  return {
+    ...carried,
+    buildings: carried.buildings.map((building) =>
+      building.kind === 'warehouse' && building.id === warehouseId
+        ? { ...building, storage: { ...building.storage, slots: storageSlots, weight: storageWeight } }
+        : building,
+    ),
+  }
+}
+
+function isItem(itemId: string): itemId is ItemId {
+  return (itemIds as readonly string[]).includes(itemId)
+}
+
+function isWay(way: string): way is TransferWay {
+  return (transferWays as readonly string[]).includes(way)
 }

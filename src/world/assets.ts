@@ -1,4 +1,5 @@
 import campfireUrl from '../../assets/campfire.png'
+import cookedMeatUrl from '../../assets/cooked-meat.png'
 import floorUrl from '../../assets/floor.png'
 import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
@@ -17,6 +18,7 @@ export const images = {
   rabbit: { key: 'rabbit', url: rabbitUrl },
   log: { key: 'log', url: logUrl },
   meat: { key: 'meat', url: meatUrl },
+  'cooked-meat': { key: 'cooked-meat', url: cookedMeatUrl },
   fur: { key: 'fur', url: furUrl },
   'stone-axe': { key: 'stone-axe', url: stoneAxeUrl },
   'stone-hammer': { key: 'stone-hammer', url: stoneHammerUrl },

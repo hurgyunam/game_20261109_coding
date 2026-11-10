@@ -1,3 +1,4 @@
+import cookedMeatUrl from '../../assets/cooked-meat.png'
 import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
@@ -11,6 +12,7 @@ const icons: Partial<Record<ItemId, string>> = {
   'stone-hammer': stoneHammerUrl,
   meat: meatUrl,
   fur: furUrl,
+  'cooked-meat': cookedMeatUrl,
 }
 
 const labels: Record<ItemId, string> = {

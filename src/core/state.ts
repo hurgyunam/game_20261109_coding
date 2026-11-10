@@ -24,11 +24,29 @@ export type Rabbit = {
   y: number
 }
 
-export type Building = {
+export type Storage = {
+  slots: Slot[]
+  weight: number
+  limit: number
+}
+
+type Placed = {
   id: string
-  kind: BuildingId
   x: number
   y: number
+}
+
+export type Building =
+  | (Placed & { kind: 'warehouse'; storage: Storage })
+  | (Placed & { kind: 'campfire' })
+
+export function createStorage(): Storage {
+  const warehouse = defs.buildings.warehouse
+  return {
+    slots: Array.from({ length: warehouse.slots }, () => null),
+    weight: 0,
+    limit: warehouse.limit,
+  }
 }
 
 export type State = {

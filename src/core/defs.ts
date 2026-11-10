@@ -60,6 +60,21 @@ export const defs = {
       result: { itemId: 'stone-hammer', count: 1 },
     },
   } satisfies Record<RecipeId, { ingredients: Stack[]; result: Stack }>,
+  buildings: {
+    warehouse: {
+      slots: 18,
+      limit: 80,
+    },
+  },
+  cooking: {
+    campfire: {
+      input: 'meat',
+      output: 'cooked-meat',
+      count: 1,
+    },
+  } satisfies {
+    campfire: { input: ItemId; output: ItemId; count: number }
+  },
   skills: {
     xp: {
       chop: 10,

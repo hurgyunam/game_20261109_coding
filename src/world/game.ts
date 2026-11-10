@@ -13,6 +13,9 @@ export type GameHooks = {
   onInventory: () => void
   onBuild: () => void
   onBuildDone: () => void
+  onWarehouse: (id: string) => void
+  onCampfire: (id: string) => void
+  onCampfireClose: () => void
   bind: (api: GameApi) => void
 }
 
