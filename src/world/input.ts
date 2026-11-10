@@ -27,6 +27,73 @@ const idle: Control = {
 }
 
 const digitNames = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'] as const
+const moveCodes = ['KeyW', 'KeyA', 'KeyS', 'KeyD'] as const
+
+type MoveCode = (typeof moveCodes)[number]
+
+const moveByKey: Record<string, MoveCode> = {
+  w: 'KeyW',
+  W: 'KeyW',
+  ㅈ: 'KeyW',
+  a: 'KeyA',
+  A: 'KeyA',
+  ㅁ: 'KeyA',
+  s: 'KeyS',
+  S: 'KeyS',
+  ㄴ: 'KeyS',
+  d: 'KeyD',
+  D: 'KeyD',
+  ㅇ: 'KeyD',
+}
+
+type HeldMoves = Map<MoveCode, number>
+
+function isMoveCode(code: string): code is MoveCode {
+  return (moveCodes as readonly string[]).includes(code)
+}
+
+function moveCodeOf(event: KeyboardEvent) {
+  if (isMoveCode(event.code)) return event.code
+  return moveByKey[event.key]
+}
+
+function heldMoves() {
+  const host = window as Window & { __heldMoves?: HeldMoves }
+  if (!host.__heldMoves) host.__heldMoves = new Map()
+  return host.__heldMoves
+}
+
+function trackMoveKey(event: KeyboardEvent) {
+  const code = moveCodeOf(event)
+  if (!code) return
+  const held = heldMoves()
+  if (event.type === 'keydown') {
+    if (!event.repeat || !held.has(code)) held.set(code, event.timeStamp)
+    return
+  }
+  held.delete(code)
+}
+
+function watchMoveKeys() {
+  const host = window as Window & { __trackMoveKeys?: boolean }
+  if (host.__trackMoveKeys) return
+  host.__trackMoveKeys = true
+  window.addEventListener('keydown', trackMoveKey, true)
+  window.addEventListener('keyup', trackMoveKey, true)
+  window.addEventListener('blur', () => heldMoves().clear())
+}
+
+function axisOf(negative: MoveCode, positive: MoveCode) {
+  const held = heldMoves()
+  const negativeAt = held.get(negative)
+  const positiveAt = held.get(positive)
+  if (positiveAt === undefined && negativeAt === undefined) return 0
+  if (positiveAt === undefined) return -1
+  if (negativeAt === undefined) return 1
+  return positiveAt >= negativeAt ? 1 : -1
+}
+
+if (typeof window !== 'undefined') watchMoveKeys()
 
 export function createControlReader(scene: Phaser.Scene) {
   const keyboard = scene.input.keyboard
@@ -61,7 +128,6 @@ export function createControlReader(scene: Phaser.Scene) {
   }
 
   const cursors = keyboard.createCursorKeys()
-  const walk = keyboard.addKeys('W,A,S,D') as Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>
   const use = keyboard.addKey('E')
   keyboard.addCapture([
     'W',
@@ -102,8 +168,8 @@ export function createControlReader(scene: Phaser.Scene) {
     read(): Control {
       return {
         move: {
-          x: axis(walk.A.isDown, walk.D.isDown),
-          y: axis(walk.W.isDown, walk.S.isDown),
+          x: axisOf('KeyA', 'KeyD'),
+          y: axisOf('KeyW', 'KeyS'),
         },
         look: {
           x: axis(cursors.left.isDown, cursors.right.isDown),
