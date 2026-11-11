@@ -7,6 +7,7 @@ import { transfer, type TransferWay } from './core/inventory'
 import type { State } from './core/state'
 import BuildMenu from './hud/BuildMenu.vue'
 import CampfirePanel from './hud/CampfirePanel.vue'
+import Clock from './hud/Clock.vue'
 import Hotbar from './hud/Hotbar.vue'
 import InventoryPanel from './hud/InventoryPanel.vue'
 import StoragePanel from './hud/StoragePanel.vue'
@@ -91,6 +92,7 @@ function onCook() {
 <template>
   <div id="game" ref="host"></div>
   <div v-if="state" class="hud">
+    <Clock :state="state" />
     <InventoryPanel
       v-if="inventoryOpen"
       :state="state"

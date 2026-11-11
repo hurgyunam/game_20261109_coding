@@ -14,6 +14,20 @@ export const buildingIds = ['warehouse', 'campfire'] as const
 
 export type BuildingId = (typeof buildingIds)[number]
 
+export const seasonIds = ['spring', 'summer', 'autumn', 'winter'] as const
+
+export type SeasonId = (typeof seasonIds)[number]
+
+export const cropIds = ['flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
+
+export type CropId = (typeof cropIds)[number]
+
+export type CropSeason = {
+  plant: SeasonId
+  harvest: SeasonId
+  yearOffset: 0 | 1
+}
+
 export type Stack = {
   itemId: ItemId
   count: number
@@ -74,6 +88,35 @@ export const defs = {
     },
   } satisfies {
     campfire: { input: ItemId; output: ItemId; count: number }
+  },
+  time: {
+    startMinute: 6 * 60,
+    dayMinutes: 24 * 60,
+    daySeconds: 4 * 60,
+    testPace: 10,
+  },
+  calendar: {
+    start: 'spring',
+    seasonDays: 7,
+    yearDays: 28,
+    crops: {
+      flax: [{ plant: 'spring', harvest: 'summer', yearOffset: 0 }],
+      rye: [{ plant: 'autumn', harvest: 'spring', yearOffset: 1 }],
+      cabbage: [
+        { plant: 'spring', harvest: 'summer', yearOffset: 0 },
+        { plant: 'summer', harvest: 'autumn', yearOffset: 0 },
+      ],
+      oat: [{ plant: 'spring', harvest: 'autumn', yearOffset: 0 }],
+      wheat: [
+        { plant: 'spring', harvest: 'autumn', yearOffset: 0 },
+        { plant: 'autumn', harvest: 'summer', yearOffset: 1 },
+      ],
+    },
+  } satisfies {
+    start: SeasonId
+    seasonDays: number
+    yearDays: number
+    crops: Record<CropId, CropSeason[]>
   },
   skills: {
     xp: {

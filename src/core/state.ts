@@ -1,4 +1,4 @@
-import { defs, skillIds, type BuildingId, type ItemId, type SkillId } from './defs'
+import { defs, skillIds, type BuildingId, type ItemId, type SeasonId, type SkillId } from './defs'
 
 export type Slot = {
   itemId: ItemId
@@ -71,6 +71,11 @@ export type State = {
   trees: Tree[]
   rabbits: Rabbit[]
   buildings: Building[]
+  time: {
+    minutes: number
+    day: number
+    season: SeasonId
+  }
 }
 
 export function createState(
@@ -104,6 +109,11 @@ export function createState(
     trees: trees.map((tree) => ({ ...tree })),
     rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
     buildings: [],
+    time: {
+      minutes: defs.time.startMinute,
+      day: 0,
+      season: defs.calendar.start,
+    },
   }
 }
 

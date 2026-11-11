@@ -1,11 +1,12 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
-import { buildingIds, type BuildingId } from '../core/defs'
+import { buildingIds, defs, type BuildingId } from '../core/defs'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
 import { createState, type Building, type Rabbit, type State, type Tree } from '../core/state'
+import { tick } from '../core/time'
 import { images } from './assets'
 import { createCamera } from './camera'
 import type { GameHooks } from './game'
@@ -64,6 +65,7 @@ export class WorldScene extends Phaser.Scene {
   private nextStrike = 0
   private facing = { x: 1, y: 0 }
   private campfireId: string | null = null
+  private night!: Phaser.GameObjects.Rectangle
 
   constructor() {
     super('world')
@@ -92,13 +94,26 @@ export class WorldScene extends Phaser.Scene {
     this.syncTrees(this.state)
     this.syncRabbits(this.state)
     this.view = createCamera(this.cameras.main, this.player, floor.width, floor.height)
+    this.night = this.add
+      .rectangle(0, 0, this.scale.width, this.scale.height, 0x0c1428, 1)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(100000)
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.fitNight, this)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.fitNight, this)
+    })
+    this.shadeNight()
     this.controls = createControlReader(this)
     this.input.mouse?.disableContextMenu()
     this.hooks = this.game.registry.get('hooks') as GameHooks
     this.hooks.bind({
       apply: (next) => {
         const pose = this.state.player
-        this.commit(next.player === pose ? next : { ...next, player: pose })
+        const time = this.state.time
+        const samePose = next.player === pose
+        const sameTime = next.time === time
+        this.commit(samePose && sameTime ? next : { ...next, player: pose, time })
       },
       beginBuild: (buildingId) => {
         this.beginBuild(buildingId)
@@ -139,11 +154,17 @@ export class WorldScene extends Phaser.Scene {
       this.facing = { x: control.move.x / length, y: control.move.y / length }
     }
     this.repeatStrike(pointer, control.use, struck, dt)
-    const next = move(this.state, control.move, dt)
-    if (next !== this.state) this.state = next
+    const timed = tick(this.state, dt)
+    const next = move(timed, control.move, dt)
+    if (next !== this.state) {
+      const minuteChanged = Math.floor(next.time.minutes) !== Math.floor(this.state.time.minutes)
+      this.state = next
+      if (minuteChanged) this.hooks.onState(next)
+    }
 
     this.player.setPosition(this.state.player.x, this.state.player.y)
     this.player.setDepth(this.state.player.y)
+    this.shadeNight()
     this.releaseCampfire()
     if (control.move.x < 0) this.player.setFlipX(true)
     else if (control.move.x > 0) this.player.setFlipX(false)
@@ -316,6 +337,14 @@ export class WorldScene extends Phaser.Scene {
     const treeId = this.treeAt(action.x, action.y)
     if (!treeId) return
     this.useTarget({ kind: 'tree', id: treeId })
+  }
+
+  private fitNight(size: { width: number; height: number }) {
+    this.night.setSize(size.width, size.height)
+  }
+
+  private shadeNight() {
+    this.night.setAlpha(nightCover(this.state.time.minutes))
   }
 
   private releaseCampfire() {
@@ -541,6 +570,13 @@ export class WorldScene extends Phaser.Scene {
     }
     return found?.id ?? null
   }
+}
+
+function nightCover(minutes: number) {
+  const span = defs.time.dayMinutes
+  const clock = ((minutes % span) + span) % span
+  const sun = -Math.cos((clock / span) * Math.PI * 2)
+  return Math.max(0, -sun) * 0.38
 }
 
 function placeRabbits(map: { width: number; height: number }): Rabbit[] {
