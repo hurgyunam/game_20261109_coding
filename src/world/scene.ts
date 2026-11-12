@@ -1,11 +1,12 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
 import { buildingIds, defs, isSeedId, type BuildingId, type CropId } from '../core/defs'
-import { canHarvest, canPlaceField, canSow, cropStage, fieldAt, fieldSpan, harvest, placeField, sow, till } from '../core/farm'
+import { canHarvest, canPlaceField, cropStage, fieldAt, fieldSpan, harvest, placeField, sow, till } from '../core/farm'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
+import { applyScene } from '../core/scenes'
 import { createState, type Building, type Merchant, type Rabbit, type State, type Tree } from '../core/state'
 import { tick } from '../core/time'
 import { images } from './assets'
@@ -107,19 +108,20 @@ export class WorldScene extends Phaser.Scene {
     const player = this.add.image(0, 0, images.player.key)
     const map = { width: floor.width, height: floor.height }
     this.mapSize = map
-    this.state = createState(
-      map,
-      { width: player.width, height: player.height },
-      placeTrees(map),
-      placeRabbits(map),
-      placeMerchants(map),
+    this.state = applyScene(
+      createState(
+        map,
+        { width: player.width, height: player.height },
+        placeTrees(map),
+        placeRabbits(map),
+        placeMerchants(map),
+      ),
+      openingScene(),
     )
     player.setPosition(this.state.player.x, this.state.player.y)
     player.setDepth(this.state.player.y)
     this.player = player
-    this.syncTrees(this.state)
-    this.syncRabbits(this.state)
-    this.syncMerchants(this.state)
+    this.render(this.state)
     this.view = createCamera(this.cameras.main, this.player, floor.width, floor.height)
     this.night = this.add
       .rectangle(0, 0, this.scale.width, this.scale.height, 0x0c1428, 1)
@@ -369,7 +371,7 @@ export class WorldScene extends Phaser.Scene {
       if (this.canMarkField()) return 'E키를 눌러 밭 영역 지정'
     }
     const sowing = this.seedTile()
-    if (sowing && canSow(this.state, sowing.tileX, sowing.tileY)) return 'E키를 눌러 씨 뿌리기'
+    if (sowing && this.bare(sowing.tileX, sowing.tileY)) return 'E키를 눌러 씨 뿌리기'
     const reaping = this.harvestTile()
     if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
     if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
@@ -564,18 +566,19 @@ export class WorldScene extends Phaser.Scene {
         const key = `${tile.x},${tile.y}`
         alive.add(key)
         const x = tile.x * tileSize + tileSize / 2
-        const y = tile.y * tileSize + tileSize / 2
+        const y = (tile.y + 1) * tileSize - 8
         const texture = cropImage[tile.crop]
         let sprite = this.cropSprites.get(key)
         if (!sprite) {
-          sprite = this.add.image(x, y, texture).setOrigin(0.5, 0.5).setDepth(2)
+          sprite = this.add.image(x, y, texture).setOrigin(0.5, 1).setDepth(y)
           sprite.setDisplaySize(40, 40)
           this.cropSprites.set(key, sprite)
         } else {
           sprite.setPosition(x, y)
+          sprite.setDepth(y)
           sprite.setTexture(texture)
         }
-        if (cropStage(state, tile.x, tile.y) === 'rotten') sprite.setTint(0x6e6258)
+        if (cropStage(state, tile.x, tile.y) === 'rotten') sprite.setTint(0xb7a898)
         else sprite.clearTint()
       }
     }
@@ -1017,6 +1020,11 @@ function nightCover(minutes: number) {
   const clock = ((minutes % span) + span) % span
   const sun = -Math.cos((clock / span) * Math.PI * 2)
   return Math.max(0, -sun) * 0.38
+}
+
+function openingScene() {
+  if (!import.meta.env.DEV) return null
+  return new URLSearchParams(window.location.search).get('scene')
 }
 
 function placeMerchants(map: { width: number; height: number }): Merchant[] {

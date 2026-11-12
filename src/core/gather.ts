@@ -1,5 +1,5 @@
 import { defs } from './defs'
-import { addItem, handItem, withSlots } from './inventory'
+import { addItem, handItem, withinLimit, withSlots } from './inventory'
 import { grantXp } from './skills'
 import type { State } from './state'
 
@@ -17,7 +17,7 @@ export function chop(state: State, treeId: string): State {
   }
 
   const slots = addItem(state.inventory.slots, 'log', 1)
-  if (!slots) return state
+  if (!slots || !withinLimit(slots, state.inventory.limit)) return state
   const stored = withSlots(state, slots)
   return grantXp(
     {

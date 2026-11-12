@@ -90,7 +90,7 @@ export const defs = {
     speed: 240,
   },
   inventory: {
-    slots: 9,
+    hands: 9,
     limit: 20,
     slowdown: 0.5,
   },
@@ -144,7 +144,6 @@ export const defs = {
   } satisfies Record<RecipeId, { ingredients: Stack[]; result: Stack }>,
   buildings: {
     warehouse: {
-      slots: 18,
       limit: 80,
     },
   },
@@ -194,7 +193,7 @@ export const defs = {
     startMinute: 6 * 60,
     dayMinutes: 24 * 60,
     daySeconds: 4 * 60,
-    testPace: 10,
+    testPace: 1,
   },
   calendar: {
     start: 'spring',

@@ -1,5 +1,5 @@
 import { defs, isSeedId, seasonIds, seedIds, type CropId, type CropSeason, type SeasonId, type SeedId } from './defs'
-import { addItem, handItem, withSlots } from './inventory'
+import { addItem, handItem, withinLimit, withSlots } from './inventory'
 import { grantXp } from './skills'
 import type { Field, FieldTile, Slot, State } from './state'
 import { seasonOn } from './time'
@@ -91,7 +91,7 @@ export function harvest(state: State, tileX: number, tileY: number): State {
   const stage = cropStage(state, tileX, tileY)
   if (stage !== 'ripe' && stage !== 'rotten') return state
   const slots = stage === 'rotten' ? takeRotten(state.inventory.slots) : takeRipe(state.inventory.slots, tile.crop)
-  if (!slots) return state
+  if (!slots || !withinLimit(slots, state.inventory.limit)) return state
   const tilled = field.tilled.filter((item) => item.x !== tileX || item.y !== tileY)
   const carried = withSlots(state, slots)
   return grantXp(

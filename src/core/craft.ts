@@ -1,5 +1,5 @@
 import { defs, recipeIds, type RecipeId } from './defs'
-import { addItem, removeItem, withSlots } from './inventory'
+import { addItem, removeItem, withinLimit, withSlots } from './inventory'
 import { grantXp } from './skills'
 import type { State } from './state'
 
@@ -13,7 +13,7 @@ export function craft(state: State, recipeId: string): State {
     slots = next
   }
   const added = addItem(slots, recipe.result.itemId, recipe.result.count)
-  if (!added) return state
+  if (!added || !withinLimit(added, state.inventory.limit)) return state
   return grantXp(withSlots(state, added), 'craft', defs.skills.xp.craft)
 }
 

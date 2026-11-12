@@ -1,5 +1,5 @@
 import { defs } from './defs'
-import { addItem, handItem, withSlots } from './inventory'
+import { addItem, handItem, withinLimit, withSlots } from './inventory'
 import { grantXp } from './skills'
 import type { State } from './state'
 
@@ -13,6 +13,7 @@ export function hunt(state: State, rabbitId: string): State {
     if (!next) return state
     slots = next
   }
+  if (!withinLimit(slots, state.inventory.limit)) return state
 
   return grantXp(
     {

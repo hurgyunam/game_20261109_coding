@@ -6,7 +6,8 @@ const transferWays = ['store', 'take'] as const
 export type TransferWay = (typeof transferWays)[number]
 
 export function selectSlot(state: State, slot: number): State {
-  if (!Number.isInteger(slot) || slot < 1 || slot > state.inventory.slots.length) return state
+  if (!Number.isInteger(slot) || slot < 1 || slot > defs.inventory.hands) return state
+  if (slot > state.inventory.slots.length) return state
   if (state.inventory.hand === slot) return state
   return {
     ...state,
@@ -29,8 +30,11 @@ export function addItem(slots: readonly Slot[], itemId: ItemId, count: number): 
     return next
   }
   const empty = next.findIndex((slot) => slot === null)
-  if (empty < 0) return null
-  next[empty] = { itemId, count }
+  if (empty >= 0) {
+    next[empty] = { itemId, count }
+    return next
+  }
+  next.push({ itemId, count })
   return next
 }
 
@@ -67,6 +71,10 @@ export function withSlots(state: State, slots: Slot[]): State {
       weight: weightOf(slots),
     },
   }
+}
+
+export function withinLimit(slots: readonly Slot[], limit: number): boolean {
+  return weightOf(slots) <= limit
 }
 
 export function transfer(

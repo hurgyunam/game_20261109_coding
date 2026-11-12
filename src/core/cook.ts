@@ -1,5 +1,5 @@
 import { defs } from './defs'
-import { addItem, removeItem, withSlots } from './inventory'
+import { addItem, removeItem, withinLimit, withSlots } from './inventory'
 import type { State } from './state'
 
 export function cook(state: State, campfireId: string): State {
@@ -12,6 +12,6 @@ export function cook(state: State, campfireId: string): State {
   const removed = removeItem(state.inventory.slots, recipe.input, recipe.count)
   if (!removed) return state
   const added = addItem(removed, recipe.output, recipe.count)
-  if (!added) return state
+  if (!added || !withinLimit(added, state.inventory.limit)) return state
   return withSlots(state, added)
 }

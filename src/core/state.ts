@@ -65,7 +65,7 @@ export type Building =
 export function createStorage(): Storage {
   const warehouse = defs.buildings.warehouse
   return {
-    slots: Array.from({ length: warehouse.slots }, () => null),
+    slots: [],
     weight: 0,
     limit: warehouse.limit,
   }
@@ -123,7 +123,7 @@ export function createState(
     },
     bounds: { minX, minY, maxX, maxY },
     inventory: {
-      slots: Array.from({ length: defs.inventory.slots }, () => null),
+      slots: Array.from({ length: defs.inventory.hands }, () => null),
       hand: 1,
       weight: 0,
       limit: defs.inventory.limit,

@@ -27,7 +27,7 @@ const labels: Record<SkillId, string> = {
       >
         <span>{{ labels[id] }}</span>
         <span>Lv.{{ state.skills[id].level }}</span>
-        <span class="xp">{{ state.skills[id].xp }}</span>
+        <span class="xp">경험치 {{ state.skills[id].xp }}</span>
         <span v-if="state.skills[id].unlocked.length" class="techs">
           {{ state.skills[id].unlocked.join(' ') }}
         </span>

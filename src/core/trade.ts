@@ -1,5 +1,5 @@
 import { defs, tradeItemIds, type TradeItemId } from './defs'
-import { addItem, removeItem, withSlots } from './inventory'
+import { addItem, removeItem, withinLimit, withSlots } from './inventory'
 import type { State } from './state'
 
 export function offer(itemId: string): { itemId: TradeItemId; buy: number; sell: number } | null {
@@ -12,7 +12,7 @@ export function buy(state: State, merchantId: string, itemId: string): State {
   const quote = quoteFor(state, merchantId, itemId)
   if (!quote || state.silver < quote.buy) return state
   const slots = addItem(state.inventory.slots, quote.itemId, 1)
-  if (!slots) return state
+  if (!slots || !withinLimit(slots, state.inventory.limit)) return state
   return { ...withSlots(state, slots), silver: state.silver - quote.buy }
 }
 
