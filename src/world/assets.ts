@@ -1,17 +1,29 @@
+import cabbageUrl from '../../assets/cabbage.png'
+import cabbageSeedUrl from '../../assets/cabbage-seed.png'
 import campfireUrl from '../../assets/campfire.png'
 import cookedMeatUrl from '../../assets/cooked-meat.png'
+import fertilizerUrl from '../../assets/fertilizer.png'
+import flaxUrl from '../../assets/flax.png'
+import flaxSeedUrl from '../../assets/flax-seed.png'
 import floorUrl from '../../assets/floor.png'
 import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
 import merchantUrl from '../../assets/merchant.png'
+import oatUrl from '../../assets/oat.png'
+import oatSeedUrl from '../../assets/oat-seed.png'
 import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
+import ryeUrl from '../../assets/rye.png'
+import ryeSeedUrl from '../../assets/rye-seed.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
 import stoneHammerUrl from '../../assets/stone-hammer.png'
 import stoneHoeUrl from '../../assets/stone-hoe.png'
+import stoneSickleUrl from '../../assets/stone-sickle.png'
 import treeUrl from '../../assets/tree.png'
 import warehouseUrl from '../../assets/warehouse.png'
+import wheatUrl from '../../assets/wheat.png'
+import wheatSeedUrl from '../../assets/wheat-seed.png'
 
 export const images = {
   floor: { key: 'floor', url: floorUrl },
@@ -26,6 +38,18 @@ export const images = {
   'stone-axe': { key: 'stone-axe', url: stoneAxeUrl },
   'stone-hammer': { key: 'stone-hammer', url: stoneHammerUrl },
   'stone-hoe': { key: 'stone-hoe', url: stoneHoeUrl },
+  'stone-sickle': { key: 'stone-sickle', url: stoneSickleUrl },
+  flax: { key: 'flax', url: flaxUrl },
+  rye: { key: 'rye', url: ryeUrl },
+  cabbage: { key: 'cabbage', url: cabbageUrl },
+  oat: { key: 'oat', url: oatUrl },
+  wheat: { key: 'wheat', url: wheatUrl },
+  fertilizer: { key: 'fertilizer', url: fertilizerUrl },
+  'flax-seed': { key: 'flax-seed', url: flaxSeedUrl },
+  'rye-seed': { key: 'rye-seed', url: ryeSeedUrl },
+  'cabbage-seed': { key: 'cabbage-seed', url: cabbageSeedUrl },
+  'oat-seed': { key: 'oat-seed', url: oatSeedUrl },
+  'wheat-seed': { key: 'wheat-seed', url: wheatSeedUrl },
   warehouse: { key: 'warehouse', url: warehouseUrl },
   campfire: { key: 'campfire', url: campfireUrl },
 } as const

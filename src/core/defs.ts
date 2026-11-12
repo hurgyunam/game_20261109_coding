@@ -1,12 +1,40 @@
-export const itemIds = ['log', 'stone-axe', 'stone-hammer', 'stone-hoe', 'meat', 'fur', 'cooked-meat'] as const
+export const itemIds = [
+  'log',
+  'stone-axe',
+  'stone-hammer',
+  'stone-hoe',
+  'meat',
+  'fur',
+  'cooked-meat',
+  'flax-seed',
+  'rye-seed',
+  'cabbage-seed',
+  'oat-seed',
+  'wheat-seed',
+  'stone-sickle',
+  'flax',
+  'rye',
+  'cabbage',
+  'oat',
+  'wheat',
+  'fertilizer',
+] as const
 
 export type ItemId = (typeof itemIds)[number]
+
+export const seedIds = ['flax-seed', 'rye-seed', 'cabbage-seed', 'oat-seed', 'wheat-seed'] as const
+
+export type SeedId = (typeof seedIds)[number]
+
+export function isSeedId(itemId: string): itemId is SeedId {
+  return (seedIds as readonly string[]).includes(itemId)
+}
 
 export const skillIds = ['gather', 'farm', 'hunt', 'craft'] as const
 
 export type SkillId = (typeof skillIds)[number]
 
-export const recipeIds = ['stone-axe', 'stone-hammer', 'stone-hoe'] as const
+export const recipeIds = ['stone-axe', 'stone-hammer', 'stone-hoe', 'stone-sickle'] as const
 
 export type RecipeId = (typeof recipeIds)[number]
 
@@ -22,7 +50,22 @@ export const cropIds = ['flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
 
 export type CropId = (typeof cropIds)[number]
 
-export const tradeItemIds = ['stone-axe', 'stone-hammer', 'stone-hoe'] as const
+export const tradeItemIds = [
+  'stone-axe',
+  'stone-hammer',
+  'stone-hoe',
+  'stone-sickle',
+  'flax-seed',
+  'rye-seed',
+  'cabbage-seed',
+  'oat-seed',
+  'wheat-seed',
+  'flax',
+  'rye',
+  'cabbage',
+  'oat',
+  'wheat',
+] as const
 
 export type TradeItemId = (typeof tradeItemIds)[number]
 
@@ -62,7 +105,19 @@ export const defs = {
     meat: { weight: 2 },
     fur: { weight: 1 },
     'cooked-meat': { weight: 2 },
-  },
+    'flax-seed': { weight: 1 },
+    'rye-seed': { weight: 1 },
+    'cabbage-seed': { weight: 1 },
+    'oat-seed': { weight: 1 },
+    'wheat-seed': { weight: 1 },
+    'stone-sickle': { weight: 4 },
+    flax: { weight: 1 },
+    rye: { weight: 1 },
+    cabbage: { weight: 1 },
+    oat: { weight: 1 },
+    wheat: { weight: 1 },
+    fertilizer: { weight: 1 },
+  } satisfies Record<ItemId, { weight: number }>,
   drops: {
     rabbit: [
       { itemId: 'meat', count: 1 },
@@ -82,6 +137,10 @@ export const defs = {
       ingredients: [] as Stack[],
       result: { itemId: 'stone-hoe', count: 1 },
     },
+    'stone-sickle': {
+      ingredients: [] as Stack[],
+      result: { itemId: 'stone-sickle', count: 1 },
+    },
   } satisfies Record<RecipeId, { ingredients: Stack[]; result: Stack }>,
   buildings: {
     warehouse: {
@@ -94,6 +153,11 @@ export const defs = {
   },
   field: {
     maxSide: 10,
+    harvest: {
+      crop: 2,
+      seed: 3,
+      fertilizer: 2,
+    },
   },
   trade: {
     silver: 50,
@@ -101,6 +165,17 @@ export const defs = {
       'stone-axe': 20,
       'stone-hammer': 24,
       'stone-hoe': 30,
+      'stone-sickle': 28,
+      'flax-seed': 8,
+      'rye-seed': 10,
+      'cabbage-seed': 8,
+      'oat-seed': 10,
+      'wheat-seed': 12,
+      flax: 12,
+      rye: 16,
+      cabbage: 12,
+      oat: 16,
+      wheat: 20,
     },
   } satisfies {
     silver: number
@@ -125,6 +200,13 @@ export const defs = {
     start: 'spring',
     seasonDays: 7,
     yearDays: 28,
+    seeds: {
+      'flax-seed': 'flax',
+      'rye-seed': 'rye',
+      'cabbage-seed': 'cabbage',
+      'oat-seed': 'oat',
+      'wheat-seed': 'wheat',
+    },
     crops: {
       flax: [{ plant: 'spring', harvest: 'summer', yearOffset: 0 }],
       rye: [{ plant: 'autumn', harvest: 'spring', yearOffset: 1 }],
@@ -142,6 +224,7 @@ export const defs = {
     start: SeasonId
     seasonDays: number
     yearDays: number
+    seeds: Record<SeedId, CropId>
     crops: Record<CropId, CropSeason[]>
   },
   skills: {
@@ -150,6 +233,8 @@ export const defs = {
       craft: 10,
       hunt: 10,
       till: 10,
+      sow: 10,
+      harvest: 10,
     },
     thresholds: {
       gather: [] as SkillStep[],

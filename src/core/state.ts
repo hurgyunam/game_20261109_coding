@@ -1,4 +1,4 @@
-import { defs, skillIds, type BuildingId, type ItemId, type SeasonId, type SkillId } from './defs'
+import { defs, skillIds, type BuildingId, type CropId, type ItemId, type SeasonId, type SkillId } from './defs'
 
 export type Slot = {
   itemId: ItemId
@@ -33,6 +33,8 @@ export type Merchant = {
 export type FieldTile = {
   x: number
   y: number
+  crop?: CropId
+  day?: number
 }
 
 export type Field = {

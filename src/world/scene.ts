@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
-import { buildingIds, defs, type BuildingId } from '../core/defs'
-import { canPlaceField, fieldAt, fieldSpan, placeField, till } from '../core/farm'
+import { buildingIds, defs, isSeedId, type BuildingId, type CropId } from '../core/defs'
+import { canHarvest, canPlaceField, canSow, cropStage, fieldAt, fieldSpan, harvest, placeField, sow, till } from '../core/farm'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
@@ -83,6 +83,7 @@ export class WorldScene extends Phaser.Scene {
   private ghost: { kind: BuildingId; sprite: Phaser.GameObjects.Image } | null = null
   private fieldGhost: FieldGhost | null = null
   private fieldMarks!: Phaser.GameObjects.Graphics
+  private cropSprites = new Map<string, Phaser.GameObjects.Image>()
   private tillHint: Phaser.GameObjects.Text | null = null
   private nextStrike = 0
   private holdPaused = false
@@ -184,8 +185,10 @@ export class WorldScene extends Phaser.Scene {
     const timed = tick(this.state, dt)
     const next = move(timed, control.move, dt)
     if (next !== this.state) {
+      const dayChanged = next.time.day !== this.state.time.day
       const minuteChanged = Math.floor(next.time.minutes) !== Math.floor(this.state.time.minutes)
       this.state = next
+      if (dayChanged) this.syncCrops(next)
       if (minuteChanged) this.hooks.onState(next)
     }
 
@@ -234,6 +237,8 @@ export class WorldScene extends Phaser.Scene {
 
   private interact(target: Aim | null) {
     if (this.tillAhead()) return
+    if (this.sowAhead()) return
+    if (this.harvestAhead()) return
     if (target && this.targetClaims(target)) {
       this.useTarget(target)
       return
@@ -253,6 +258,58 @@ export class WorldScene extends Phaser.Scene {
     if (!tile) return false
     this.commit(till(this.state, tile.tileX, tile.tileY))
     return true
+  }
+
+  private sowAhead() {
+    if (this.ghost || this.fieldGhost) return false
+    const tile = this.seedTile()
+    if (!tile) return false
+    this.commit(sow(this.state, tile.tileX, tile.tileY))
+    return true
+  }
+
+  private seedTile() {
+    if (!isSeedId(handItem(this.state)?.itemId ?? '')) return null
+    const center = this.tileAt(this.player.x, this.player.y)
+    const ahead = this.tileAhead()
+    if (center && fieldAt(this.state, center.tileX, center.tileY)) {
+      if (this.bare(center.tileX, center.tileY)) return center
+      if (ahead && this.bare(ahead.tileX, ahead.tileY)) return ahead
+      return center
+    }
+    if (ahead && fieldAt(this.state, ahead.tileX, ahead.tileY)) return ahead
+    return null
+  }
+
+  private harvestAhead() {
+    if (this.ghost || this.fieldGhost) return false
+    const tile = this.harvestTile()
+    if (!tile) return false
+    this.commit(harvest(this.state, tile.tileX, tile.tileY))
+    return true
+  }
+
+  private harvestTile() {
+    if (handItem(this.state)?.itemId !== 'stone-sickle') return null
+    const center = this.tileAt(this.player.x, this.player.y)
+    const ahead = this.tileAhead()
+    if (center && this.planted(center.tileX, center.tileY)) return center
+    if (ahead && this.planted(ahead.tileX, ahead.tileY)) return ahead
+    if (center && fieldAt(this.state, center.tileX, center.tileY)) return center
+    if (ahead && fieldAt(this.state, ahead.tileX, ahead.tileY)) return ahead
+    return null
+  }
+
+  private planted(tileX: number, tileY: number) {
+    const field = fieldAt(this.state, tileX, tileY)
+    return !!field?.tilled.some((tile) => tile.x === tileX && tile.y === tileY && tile.crop)
+  }
+
+  private bare(tileX: number, tileY: number) {
+    const field = fieldAt(this.state, tileX, tileY)
+    if (!field) return false
+    const tile = field.tilled.find((item) => item.x === tileX && item.y === tileY)
+    return !!tile && !tile.crop
   }
 
   private tillTile() {
@@ -311,6 +368,10 @@ export class WorldScene extends Phaser.Scene {
       if (this.inUntilledField()) return 'E키를 눌러 밭 갈기'
       if (this.canMarkField()) return 'E키를 눌러 밭 영역 지정'
     }
+    const sowing = this.seedTile()
+    if (sowing && canSow(this.state, sowing.tileX, sowing.tileY)) return 'E키를 눌러 씨 뿌리기'
+    const reaping = this.harvestTile()
+    if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
     if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
     return null
   }
@@ -492,6 +553,36 @@ export class WorldScene extends Phaser.Scene {
     for (const field of state.fields) {
       paintPlot(this.fieldMarks, field, 0xf6e7a8, 0xd4b15a, true)
       for (const tile of field.tilled) paintFurrow(this.fieldMarks, tile.x, tile.y)
+    }
+  }
+
+  private syncCrops(state: State) {
+    const alive = new Set<string>()
+    for (const field of state.fields) {
+      for (const tile of field.tilled) {
+        if (!tile.crop) continue
+        const key = `${tile.x},${tile.y}`
+        alive.add(key)
+        const x = tile.x * tileSize + tileSize / 2
+        const y = tile.y * tileSize + tileSize / 2
+        const texture = cropImage[tile.crop]
+        let sprite = this.cropSprites.get(key)
+        if (!sprite) {
+          sprite = this.add.image(x, y, texture).setOrigin(0.5, 0.5).setDepth(2)
+          sprite.setDisplaySize(40, 40)
+          this.cropSprites.set(key, sprite)
+        } else {
+          sprite.setPosition(x, y)
+          sprite.setTexture(texture)
+        }
+        if (cropStage(state, tile.x, tile.y) === 'rotten') sprite.setTint(0x6e6258)
+        else sprite.clearTint()
+      }
+    }
+    for (const [key, sprite] of this.cropSprites) {
+      if (alive.has(key)) continue
+      this.cropSprites.delete(key)
+      sprite.destroy()
     }
   }
 
@@ -681,6 +772,7 @@ export class WorldScene extends Phaser.Scene {
     this.syncMerchants(state)
     this.syncBuildings(state)
     this.syncFields(state)
+    this.syncCrops(state)
   }
 
   private syncBuildings(state: State) {
@@ -870,6 +962,14 @@ export class WorldScene extends Phaser.Scene {
     }
     return found?.id ?? null
   }
+}
+
+const cropImage: Record<CropId, string> = {
+  flax: images.flax.key,
+  rye: images.rye.key,
+  cabbage: images.cabbage.key,
+  oat: images.oat.key,
+  wheat: images.wheat.key,
 }
 
 function paintFurrow(graphics: Phaser.GameObjects.Graphics, tileX: number, tileY: number) {
