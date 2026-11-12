@@ -37,6 +37,7 @@ const scenes: Record<string, (state: State) => State> = {
   winter,
   'next-spring': nextSpring,
   'next-summer': nextSummer,
+  manure,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -139,6 +140,16 @@ function nextSpring(state: State): State {
       { itemId: 'rye-seed', count: 1 },
     ]),
     [plant(here, 'rye', 14), plant(east, 'wheat', 14), west],
+  )
+}
+
+function manure(state: State): State {
+  return withPlot(
+    carry(atDay(state, 14), [
+      { itemId: 'stone-sickle', count: 1 },
+      { itemId: 'fertilizer', count: 5 },
+    ]),
+    [plant(here, 'oat', 0), plant(east, 'wheat', 0), plant(south, 'flax', 0), north],
   )
 }
 

@@ -77,6 +77,25 @@ export function cropStage(state: State, tileX: number, tileY: number): CropStage
   return 'rotten'
 }
 
+export function canFertilize(state: State, tileX: number, tileY: number): boolean {
+  if (handItem(state)?.itemId !== 'fertilizer') return false
+  return !!plantedAt(state, tileX, tileY)
+}
+
+export function fertilize(state: State, tileX: number, tileY: number): State {
+  if (!canFertilize(state, tileX, tileY)) return state
+  const carried = consumeHand(state)
+  const field = fieldAt(state, tileX, tileY)
+  if (!carried || !field) return state
+  const tilled = field.tilled.map((tile) =>
+    tile.x === tileX && tile.y === tileY ? { ...tile, fertilized: true } : tile,
+  )
+  return {
+    ...carried,
+    fields: carried.fields.map((item) => (item.id === field.id ? { ...item, tilled } : item)),
+  }
+}
+
 export function canHarvest(state: State, tileX: number, tileY: number): boolean {
   if (handItem(state)?.itemId !== 'stone-sickle') return false
   const stage = cropStage(state, tileX, tileY)
@@ -90,7 +109,10 @@ export function harvest(state: State, tileX: number, tileY: number): State {
   if (!tile || !field) return state
   const stage = cropStage(state, tileX, tileY)
   if (stage !== 'ripe' && stage !== 'rotten') return state
-  const slots = stage === 'rotten' ? takeRotten(state.inventory.slots) : takeRipe(state.inventory.slots, tile.crop)
+  const slots =
+    stage === 'rotten'
+      ? takeRotten(state.inventory.slots)
+      : takeRipe(state.inventory.slots, tile.crop, tile.fertilized === true)
   if (!slots || !withinLimit(slots, state.inventory.limit)) return state
   const tilled = field.tilled.filter((item) => item.x !== tileX || item.y !== tileY)
   const carried = withSlots(state, slots)
@@ -148,10 +170,11 @@ function seedOf(crop: CropId): SeedId | null {
   return seedIds.find((id) => defs.calendar.seeds[id] === crop) ?? null
 }
 
-function takeRipe(slots: readonly Slot[], crop: CropId): Slot[] | null {
+function takeRipe(slots: readonly Slot[], crop: CropId, fertilized: boolean): Slot[] | null {
   const seed = seedOf(crop)
   if (!seed) return null
-  const withCrop = addItem(slots, crop, defs.field.harvest.crop)
+  const count = fertilized ? defs.field.harvest.fertilizedCrop : defs.field.harvest.crop
+  const withCrop = addItem(slots, crop, count)
   if (!withCrop) return null
   return addItem(withCrop, seed, defs.field.harvest.seed)
 }

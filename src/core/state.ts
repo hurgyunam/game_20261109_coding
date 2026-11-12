@@ -35,6 +35,7 @@ export type FieldTile = {
   y: number
   crop?: CropId
   day?: number
+  fertilized?: boolean
 }
 
 export type Field = {

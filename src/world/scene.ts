@@ -1,7 +1,19 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
 import { buildingIds, defs, isSeedId, type BuildingId, type CropId } from '../core/defs'
-import { canHarvest, canPlaceField, cropStage, fieldAt, fieldSpan, harvest, placeField, sow, till } from '../core/farm'
+import {
+  canFertilize,
+  canHarvest,
+  canPlaceField,
+  cropStage,
+  fieldAt,
+  fieldSpan,
+  fertilize,
+  harvest,
+  placeField,
+  sow,
+  till,
+} from '../core/farm'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
@@ -240,6 +252,7 @@ export class WorldScene extends Phaser.Scene {
   private interact(target: Aim | null) {
     if (this.tillAhead()) return
     if (this.sowAhead()) return
+    if (this.fertilizeAhead()) return
     if (this.harvestAhead()) return
     if (target && this.targetClaims(target)) {
       this.useTarget(target)
@@ -280,6 +293,23 @@ export class WorldScene extends Phaser.Scene {
       return center
     }
     if (ahead && fieldAt(this.state, ahead.tileX, ahead.tileY)) return ahead
+    return null
+  }
+
+  private fertilizeAhead() {
+    if (this.ghost || this.fieldGhost) return false
+    const tile = this.manureTile()
+    if (!tile) return false
+    this.commit(fertilize(this.state, tile.tileX, tile.tileY))
+    return true
+  }
+
+  private manureTile() {
+    if (handItem(this.state)?.itemId !== 'fertilizer') return null
+    const center = this.tileAt(this.player.x, this.player.y)
+    const ahead = this.tileAhead()
+    if (center && fieldAt(this.state, center.tileX, center.tileY)) return center
+    if (ahead && this.planted(ahead.tileX, ahead.tileY)) return ahead
     return null
   }
 
@@ -372,6 +402,8 @@ export class WorldScene extends Phaser.Scene {
     }
     const sowing = this.seedTile()
     if (sowing && this.bare(sowing.tileX, sowing.tileY)) return 'E키를 눌러 씨 뿌리기'
+    const feeding = this.manureTile()
+    if (feeding && canFertilize(this.state, feeding.tileX, feeding.tileY)) return 'E키를 눌러 거름 뿌리기'
     const reaping = this.harvestTile()
     if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
     if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'

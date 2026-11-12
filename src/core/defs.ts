@@ -156,6 +156,7 @@ export const defs = {
       crop: 2,
       seed: 3,
       fertilizer: 2,
+      fertilizedCrop: 3,
     },
   },
   trade: {
