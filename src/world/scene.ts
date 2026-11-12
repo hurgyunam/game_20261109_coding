@@ -19,7 +19,8 @@ import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
 import { applyScene } from '../core/scenes'
-import { createState, type Building, type Merchant, type Rabbit, type State, type Tree } from '../core/state'
+import { createState, type Building, type Merchant, type Rabbit, type River, type State, type Tree } from '../core/state'
+import { drink } from '../core/survive'
 import { tick } from '../core/time'
 import { images } from './assets'
 import { createCamera } from './camera'
@@ -63,7 +64,7 @@ const rabbitSpots = [
 const merchantSpots = [[0.7067, 0.6933]] as const
 
 type Aim = {
-  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire' | 'merchant'
+  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire' | 'merchant' | 'river'
   id: string
 }
 
@@ -90,6 +91,7 @@ export class WorldScene extends Phaser.Scene {
   private treeSprites = new Map<string, Phaser.GameObjects.Image>()
   private rabbitSprites = new Map<string, Phaser.GameObjects.Image>()
   private merchantSprites = new Map<string, Phaser.GameObjects.Image>()
+  private riverSprites = new Map<string, Phaser.GameObjects.Image>()
   private tradeHints = new Map<string, Phaser.GameObjects.Text>()
   private buildingSprites = new Map<string, Phaser.GameObjects.Image>()
   private mapSize = { width: 0, height: 0 }
@@ -127,6 +129,7 @@ export class WorldScene extends Phaser.Scene {
         placeTrees(map),
         placeRabbits(map),
         placeMerchants(map),
+        placeRivers(),
       ),
       openingScene(),
     )
@@ -150,6 +153,7 @@ export class WorldScene extends Phaser.Scene {
     this.hooks = this.game.registry.get('hooks') as GameHooks
     this.hooks.bind({
       apply: (next) => {
+        if (this.state.survival.health <= 0) return
         const pose = this.state.player
         const time = this.state.time
         const samePose = next.player === pose
@@ -164,6 +168,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
+    if (this.state.survival.health <= 0) {
+      this.controls.consume()
+      this.tillHint?.setVisible(false)
+      return
+    }
     const control = this.controls.read()
     const pointer = this.controls.pointer()
     let struck = false
@@ -191,13 +200,14 @@ export class WorldScene extends Phaser.Scene {
     }
 
     const dt = Math.min(delta, maxFrameSeconds * 1000) / 1000
-    if (control.move.x !== 0 || control.move.y !== 0) {
+    const moving = control.move.x !== 0 || control.move.y !== 0
+    if (moving) {
       const length = Math.hypot(control.move.x, control.move.y)
       this.facing = { x: control.move.x / length, y: control.move.y / length }
     }
     this.repeatStrike(pointer, control.use, struck, dt)
-    const timed = tick(this.state, dt)
-    const next = move(timed, control.move, dt)
+    const stepped = move(this.state, control.move, dt)
+    const next = tick(stepped, dt, stepped !== this.state)
     if (next !== this.state) {
       const dayChanged = next.time.day !== this.state.time.day
       const minuteChanged = Math.floor(next.time.minutes) !== Math.floor(this.state.time.minutes)
@@ -258,6 +268,7 @@ export class WorldScene extends Phaser.Scene {
       this.useTarget(target)
       return
     }
+    if (this.drinkAhead(target)) return
     if (this.beginField()) return
     this.offerBuild()
   }
@@ -407,7 +418,16 @@ export class WorldScene extends Phaser.Scene {
     const reaping = this.harvestTile()
     if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
     if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
+    if (this.ahead()?.kind === 'river') return 'E키를 눌러 물 마시기'
     return null
+  }
+
+  private drinkAhead(target: Aim | null) {
+    if (target && target.kind !== 'river') return false
+    const river = target?.kind === 'river' ? target : this.ahead()
+    if (river?.kind !== 'river') return false
+    this.commit(drink(this.state, river.id))
+    return true
   }
 
   private tillHintText() {
@@ -663,7 +683,8 @@ export class WorldScene extends Phaser.Scene {
       this.state.trees.some((tree) => here(tree.x, tree.y)) ||
       this.state.rabbits.some((rabbit) => here(rabbit.x, rabbit.y)) ||
       this.state.buildings.some((building) => here(building.x, building.y)) ||
-      this.state.merchants.some((merchant) => here(merchant.x, merchant.y))
+      this.state.merchants.some((merchant) => here(merchant.x, merchant.y)) ||
+      this.state.rivers.some((river) => here(river.x, river.y))
     )
   }
 
@@ -766,6 +787,9 @@ export class WorldScene extends Phaser.Scene {
       ...this.state.merchants.map((merchant) =>
         this.aimAt('merchant', merchant.id, merchant.x, merchant.y, this.merchantSprites.get(merchant.id)),
       ),
+      ...this.state.rivers.map((river) =>
+        this.aimAt('river', river.id, river.x, river.y, this.riverSprites.get(river.id)),
+      ),
     ]
     let found: (Aim & { distance: number }) | null = null
     for (const spot of spots) {
@@ -805,6 +829,7 @@ export class WorldScene extends Phaser.Scene {
     this.syncTrees(state)
     this.syncRabbits(state)
     this.syncMerchants(state)
+    this.syncRivers(state)
     this.syncBuildings(state)
     this.syncFields(state)
     this.syncCrops(state)
@@ -828,6 +853,23 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
     sprite.setDepth(building.y)
     this.buildingSprites.set(building.id, sprite)
+  }
+
+  private syncRivers(state: State) {
+    const alive = new Set(state.rivers.map((river) => river.id))
+    for (const [id, sprite] of this.riverSprites) {
+      if (alive.has(id)) continue
+      this.riverSprites.delete(id)
+      sprite.destroy()
+    }
+    for (const river of state.rivers) {
+      if (!this.riverSprites.has(river.id)) this.spawnRiver(river)
+    }
+  }
+
+  private spawnRiver(river: River) {
+    const sprite = this.add.image(river.x, river.y, images.river.key).setOrigin(0.5, 1).setDepth(1)
+    this.riverSprites.set(river.id, sprite)
   }
 
   private syncMerchants(state: State) {
@@ -1057,6 +1099,11 @@ function nightCover(minutes: number) {
 function openingScene() {
   if (!import.meta.env.DEV) return null
   return new URLSearchParams(window.location.search).get('scene')
+}
+
+function placeRivers(): River[] {
+  const tile = defs.map.tile
+  return [{ id: 'river-1', x: tile * 3 + tile / 2, y: tile * 7 + tile / 2 }]
 }
 
 function placeMerchants(map: { width: number; height: number }): Merchant[] {

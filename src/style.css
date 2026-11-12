@@ -481,6 +481,82 @@ body,
   font-size: 12px;
 }
 
+.vitals {
+  position: absolute;
+  left: 16px;
+  bottom: 112px;
+  width: 220px;
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(10, 18, 14, 0.88);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+}
+
+.vitals p {
+  display: grid;
+  grid-template-columns: 2.2em 2.4em 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vitals p + p {
+  margin-top: 6px;
+}
+
+.vitals .value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.vitals .track {
+  height: 8px;
+  background: #1c2a22;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.vitals .fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.vitals p[data-vital='hunger'] .fill {
+  background: #d7a15e;
+}
+
+.vitals p[data-vital='thirst'] .fill {
+  background: #6eb0d4;
+}
+
+.vitals p[data-vital='health'] .fill {
+  background: #d4655a;
+}
+
+.game-over {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 12, 0.72);
+  pointer-events: auto;
+}
+
+.game-over p {
+  margin: 0;
+  padding: 18px 28px;
+  background: rgba(10, 18, 14, 0.94);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
 @media (max-width: 560px) {
   .storage .columns {
     grid-template-columns: 1fr;

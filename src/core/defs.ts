@@ -196,6 +196,17 @@ export const defs = {
     daySeconds: 4 * 60,
     testPace: 1,
   },
+  vitals: {
+    max: 100,
+    hunger: 100,
+    thirst: 100,
+    health: 100,
+    span: 48,
+    idle: 1,
+    move: 2,
+    hurt: 1,
+    drink: 100,
+  },
   calendar: {
     start: 'spring',
     seasonDays: 7,

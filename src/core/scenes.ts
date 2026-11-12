@@ -38,6 +38,9 @@ const scenes: Record<string, (state: State) => State> = {
   'next-spring': nextSpring,
   'next-summer': nextSummer,
   manure,
+  river,
+  hungry,
+  thirsty,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -153,6 +156,42 @@ function manure(state: State): State {
   )
 }
 
+function river(state: State): State {
+  return besideRiver(state)
+}
+
+function hungry(state: State): State {
+  return withVitals(state, { hunger: 0 })
+}
+
+function thirsty(state: State): State {
+  return besideRiver(withVitals(state, { thirst: 0 }))
+}
+
+function withVitals(
+  state: State,
+  patch: Partial<Pick<State['survival'], 'hunger' | 'thirst' | 'health'>>,
+): State {
+  return {
+    ...state,
+    survival: {
+      hunger: patch.hunger ?? state.survival.hunger,
+      thirst: patch.thirst ?? state.survival.thirst,
+      health: patch.health ?? state.survival.health,
+      meter: 0,
+    },
+  }
+}
+
+function besideRiver(state: State): State {
+  const river = state.rivers[0]
+  if (!river) return state
+  const x = river.x - defs.map.tile
+  const y = river.y
+  if (x === state.player.x && y === state.player.y) return state
+  return { ...state, player: { ...state.player, x, y } }
+}
+
 function nextSummer(state: State): State {
   return withPlot(carry(atDay(state, 35), [{ itemId: 'stone-sickle', count: 1 }]), [
     plant(here, 'wheat', 14),
@@ -253,6 +292,7 @@ function clearSpan(state: State, span: Span): State {
     trees: state.trees.filter((item) => !hits(item.x, item.y)),
     rabbits: state.rabbits.filter((item) => !hits(item.x, item.y)),
     merchants: state.merchants.filter((item) => !hits(item.x, item.y)),
+    rivers: state.rivers.filter((item) => !hits(item.x, item.y)),
   }
 }
 

@@ -204,7 +204,7 @@ function consumeHand(state: State): State | null {
 }
 
 function occupied(state: State, span: Span): boolean {
-  const spots = [...state.trees, ...state.rabbits, ...state.buildings, ...state.merchants]
+  const spots = [...state.trees, ...state.rabbits, ...state.buildings, ...state.merchants, ...state.rivers]
   if (spots.some((spot) => covers(span, spot.x, spot.y))) return true
   return state.fields.some((field) => overlaps(field, span))
 }

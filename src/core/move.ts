@@ -7,6 +7,7 @@ export type Direction = {
 }
 
 export function move(state: State, direction: Direction, dt: number): State {
+  if (state.survival.health <= 0) return state
   if (dt <= 0 || (direction.x === 0 && direction.y === 0)) return state
 
   const length = Math.hypot(direction.x, direction.y)

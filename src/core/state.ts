@@ -30,6 +30,19 @@ export type Merchant = {
   y: number
 }
 
+export type River = {
+  id: string
+  x: number
+  y: number
+}
+
+export type Survival = {
+  hunger: number
+  thirst: number
+  health: number
+  meter: number
+}
+
 export type FieldTile = {
   x: number
   y: number
@@ -94,7 +107,9 @@ export type State = {
   trees: Tree[]
   rabbits: Rabbit[]
   merchants: Merchant[]
+  rivers: River[]
   buildings: Building[]
+  survival: Survival
   fields: Field[]
   silver: number
   time: {
@@ -110,6 +125,7 @@ export function createState(
   trees: Tree[],
   rabbits: Rabbit[],
   merchants: Merchant[] = [],
+  rivers: River[] = [],
 ): State {
   const minX = body.width / 2
   const minY = body.height / 2
@@ -136,7 +152,14 @@ export function createState(
     trees: trees.map((tree) => ({ ...tree })),
     rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
     merchants: merchants.map((merchant) => ({ ...merchant })),
+    rivers: rivers.map((river) => ({ ...river })),
     buildings: [],
+    survival: {
+      hunger: defs.vitals.hunger,
+      thirst: defs.vitals.thirst,
+      health: defs.vitals.health,
+      meter: 0,
+    },
     fields: [],
     silver: defs.trade.silver,
     time: {

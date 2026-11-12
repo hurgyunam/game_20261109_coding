@@ -14,6 +14,7 @@ import InventoryPanel from './hud/InventoryPanel.vue'
 import SkillPanel from './hud/SkillPanel.vue'
 import StoragePanel from './hud/StoragePanel.vue'
 import TradePanel from './hud/TradePanel.vue'
+import Vitals from './hud/Vitals.vue'
 import { createGame, type GameApi } from './world/game'
 
 const host = ref<HTMLElement | null>(null)
@@ -116,6 +117,7 @@ function onSell(itemId: string) {
   <div id="game" ref="host"></div>
   <div v-if="state" class="hud">
     <Clock :state="state" />
+    <Vitals :state="state" />
     <SkillPanel :state="state" />
     <InventoryPanel
       v-if="inventoryOpen"
@@ -150,5 +152,8 @@ function onSell(itemId: string) {
       마우스로 위치를 고르고 클릭하세요. 우클릭으로 취소합니다.
     </p>
     <Hotbar :state="state" :open="inventoryOpen" @toggle="inventoryOpen = !inventoryOpen" />
+    <div v-if="state.survival.health <= 0" class="game-over">
+      <p>게임 오버</p>
+    </div>
   </div>
 </template>

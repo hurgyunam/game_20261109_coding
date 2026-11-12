@@ -14,6 +14,7 @@ import oatUrl from '../../assets/oat.png'
 import oatSeedUrl from '../../assets/oat-seed.png'
 import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
+import riverUrl from '../../assets/river.png'
 import ryeUrl from '../../assets/rye.png'
 import ryeSeedUrl from '../../assets/rye-seed.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
@@ -30,6 +31,7 @@ export const images = {
   player: { key: 'player', url: playerUrl },
   tree: { key: 'tree', url: treeUrl },
   rabbit: { key: 'rabbit', url: rabbitUrl },
+  river: { key: 'river', url: riverUrl },
   merchant: { key: 'merchant', url: merchantUrl },
   log: { key: 'log', url: logUrl },
   meat: { key: 'meat', url: meatUrl },

@@ -1,21 +1,27 @@
 import { defs, seasonIds, type SeasonId } from './defs'
 import type { State } from './state'
+import { endure } from './survive'
 
-export function tick(state: State, dt: number): State {
-  if (dt <= 0) return state
+export function tick(state: State, dt: number, moving = false): State {
+  if (dt <= 0 || state.survival.health <= 0) return state
   const span = defs.time.dayMinutes
   const delta = ((dt * defs.time.testPace) / defs.time.daySeconds) * span
+  const gained = Math.floor(state.time.minutes + delta) - Math.floor(state.time.minutes)
   const minutes = wrap(state.time.minutes + delta, span)
   const day = state.time.day + crossedDays(state.time.minutes, delta)
-  if (minutes === state.time.minutes && day === state.time.day) return state
-  return {
-    ...state,
-    time: {
-      minutes,
-      day,
-      season: day === state.time.day ? state.time.season : seasonOn(day),
-    },
-  }
+  const timed =
+    minutes === state.time.minutes && day === state.time.day
+      ? state
+      : {
+          ...state,
+          time: {
+            minutes,
+            day,
+            season: day === state.time.day ? state.time.season : seasonOn(day),
+          },
+        }
+  if (gained <= 0) return timed
+  return endure(timed, gained, moving)
 }
 
 function crossedDays(minutes: number, delta: number) {
