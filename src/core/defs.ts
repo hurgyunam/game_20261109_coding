@@ -22,6 +22,10 @@ export const cropIds = ['flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
 
 export type CropId = (typeof cropIds)[number]
 
+export const tradeItemIds = ['stone-axe', 'stone-hammer', 'stone-hoe'] as const
+
+export type TradeItemId = (typeof tradeItemIds)[number]
+
 export type CropSeason = {
   plant: SeasonId
   harvest: SeasonId
@@ -91,6 +95,17 @@ export const defs = {
   field: {
     maxSide: 10,
   },
+  trade: {
+    silver: 50,
+    prices: {
+      'stone-axe': 20,
+      'stone-hammer': 24,
+      'stone-hoe': 30,
+    },
+  } satisfies {
+    silver: number
+    prices: Record<TradeItemId, number>
+  },
   cooking: {
     campfire: {
       input: 'meat',
@@ -134,6 +149,7 @@ export const defs = {
       chop: 10,
       craft: 10,
       hunt: 10,
+      till: 10,
     },
     thresholds: {
       gather: [] as SkillStep[],

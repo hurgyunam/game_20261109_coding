@@ -29,6 +29,7 @@ const recipes = recipeIds.map((id) => ({
       <h2>인벤토리</h2>
       <button type="button" @click="$emit('close')">닫기</button>
     </header>
+    <p class="silver" :data-silver="state.silver">은화 {{ state.silver }}</p>
     <p class="weight">총중량 {{ state.inventory.weight }} / 한도 {{ state.inventory.limit }}</p>
     <ul class="items">
       <li v-if="carried.length === 0">비어 있음</li>

@@ -1,8 +1,9 @@
 import { defs } from './defs'
 import { handItem } from './inventory'
+import { grantXp } from './skills'
 import type { Field, State } from './state'
 
-type Span = Omit<Field, 'id'>
+type Span = Omit<Field, 'id' | 'tilled'>
 
 export function fieldSpan(x1: number, y1: number, x2: number, y2: number): Span | null {
   if (![x1, y1, x2, y2].every(Number.isInteger)) return null
@@ -25,14 +26,38 @@ export function placeField(state: State, x1: number, y1: number, x2: number, y2:
   if (handItem(state)?.itemId !== 'stone-hoe') return state
   const span = fieldSpan(x1, y1, x2, y2)
   if (!span || !canPlaceField(state, x1, y1, x2, y2)) return state
-  const field: Field = { id: `field-${state.fields.length + 1}`, ...span }
+  const field: Field = { id: `field-${state.fields.length + 1}`, ...span, tilled: [] }
   return { ...state, fields: [...state.fields, field] }
+}
+
+export function fieldAt(state: State, tileX: number, tileY: number): Field | undefined {
+  if (!Number.isInteger(tileX) || !Number.isInteger(tileY)) return undefined
+  return state.fields.find((field) => contains(field, tileX, tileY))
+}
+
+export function till(state: State, tileX: number, tileY: number): State {
+  if (handItem(state)?.itemId !== 'stone-hoe') return state
+  const field = fieldAt(state, tileX, tileY)
+  if (!field || field.tilled.some((tile) => tile.x === tileX && tile.y === tileY)) return state
+  const tilled = { ...field, tilled: [...field.tilled, { x: tileX, y: tileY }] }
+  return grantXp(
+    {
+      ...state,
+      fields: state.fields.map((item) => (item.id === field.id ? tilled : item)),
+    },
+    'farm',
+    defs.skills.xp.till,
+  )
 }
 
 function occupied(state: State, span: Span): boolean {
   const spots = [...state.trees, ...state.rabbits, ...state.buildings, ...state.merchants]
   if (spots.some((spot) => covers(span, spot.x, spot.y))) return true
   return state.fields.some((field) => overlaps(field, span))
+}
+
+function contains(field: Span, tileX: number, tileY: number) {
+  return tileX >= field.x && tileX < field.x + field.w && tileY >= field.y && tileY < field.y + field.h
 }
 
 function covers(span: Span, x: number, y: number) {

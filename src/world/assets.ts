@@ -4,6 +4,7 @@ import floorUrl from '../../assets/floor.png'
 import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
+import merchantUrl from '../../assets/merchant.png'
 import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
@@ -17,6 +18,7 @@ export const images = {
   player: { key: 'player', url: playerUrl },
   tree: { key: 'tree', url: treeUrl },
   rabbit: { key: 'rabbit', url: rabbitUrl },
+  merchant: { key: 'merchant', url: merchantUrl },
   log: { key: 'log', url: logUrl },
   meat: { key: 'meat', url: meatUrl },
   'cooked-meat': { key: 'cooked-meat', url: cookedMeatUrl },

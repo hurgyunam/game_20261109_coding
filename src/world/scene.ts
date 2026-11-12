@@ -1,12 +1,12 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
 import { buildingIds, defs, type BuildingId } from '../core/defs'
-import { canPlaceField, fieldSpan, placeField } from '../core/farm'
+import { canPlaceField, fieldAt, fieldSpan, placeField, till } from '../core/farm'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
-import { createState, type Building, type Rabbit, type State, type Tree } from '../core/state'
+import { createState, type Building, type Merchant, type Rabbit, type State, type Tree } from '../core/state'
 import { tick } from '../core/time'
 import { images } from './assets'
 import { createCamera } from './camera'
@@ -47,8 +47,10 @@ const rabbitSpots = [
   [0.28, 0.36],
 ] as const
 
+const merchantSpots = [[0.7067, 0.6933]] as const
+
 type Aim = {
-  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire'
+  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire' | 'merchant'
   id: string
 }
 
@@ -74,12 +76,16 @@ export class WorldScene extends Phaser.Scene {
   private hooks!: GameHooks
   private treeSprites = new Map<string, Phaser.GameObjects.Image>()
   private rabbitSprites = new Map<string, Phaser.GameObjects.Image>()
+  private merchantSprites = new Map<string, Phaser.GameObjects.Image>()
+  private tradeHints = new Map<string, Phaser.GameObjects.Text>()
   private buildingSprites = new Map<string, Phaser.GameObjects.Image>()
   private mapSize = { width: 0, height: 0 }
   private ghost: { kind: BuildingId; sprite: Phaser.GameObjects.Image } | null = null
   private fieldGhost: FieldGhost | null = null
   private fieldMarks!: Phaser.GameObjects.Graphics
+  private tillHint: Phaser.GameObjects.Text | null = null
   private nextStrike = 0
+  private holdPaused = false
   private facing = { x: 1, y: 0 }
   private campfireId: string | null = null
   private night!: Phaser.GameObjects.Rectangle
@@ -105,12 +111,14 @@ export class WorldScene extends Phaser.Scene {
       { width: player.width, height: player.height },
       placeTrees(map),
       placeRabbits(map),
+      placeMerchants(map),
     )
     player.setPosition(this.state.player.x, this.state.player.y)
     player.setDepth(this.state.player.y)
     this.player = player
     this.syncTrees(this.state)
     this.syncRabbits(this.state)
+    this.syncMerchants(this.state)
     this.view = createCamera(this.cameras.main, this.player, floor.width, floor.height)
     this.night = this.add
       .rectangle(0, 0, this.scale.width, this.scale.height, 0x0c1428, 1)
@@ -185,6 +193,8 @@ export class WorldScene extends Phaser.Scene {
     this.player.setDepth(this.state.player.y)
     this.shadeNight()
     this.releaseCampfire()
+    this.syncTradeHint()
+    this.syncActionHint()
     if (control.move.x < 0) this.player.setFlipX(true)
     else if (control.move.x > 0) this.player.setFlipX(false)
     const follow = control.move.x !== 0 || control.move.y !== 0
@@ -196,6 +206,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private repeatStrike(pointer: Pointer, use: boolean, struck: boolean, dt: number) {
+    if (this.holdPaused) {
+      if (!pointer.down && !use) this.holdPaused = false
+      this.nextStrike = 0
+      return
+    }
     if (this.ghost || this.fieldGhost) {
       if (!pointer.down && !use) this.nextStrike = 0
       return
@@ -218,12 +233,102 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private interact(target: Aim | null) {
-    if (target) {
+    if (this.tillAhead()) return
+    if (target && this.targetClaims(target)) {
       this.useTarget(target)
       return
     }
     if (this.beginField()) return
     this.offerBuild()
+  }
+
+  private targetClaims(target: Aim) {
+    if (target.kind === 'warehouse' || target.kind === 'campfire' || target.kind === 'merchant') return true
+    return handItem(this.state)?.itemId === 'stone-axe' && (target.kind === 'tree' || target.kind === 'rabbit')
+  }
+
+  private tillAhead() {
+    if (this.ghost || this.fieldGhost) return false
+    const tile = this.tillTile()
+    if (!tile) return false
+    this.commit(till(this.state, tile.tileX, tile.tileY))
+    return true
+  }
+
+  private tillTile() {
+    if (handItem(this.state)?.itemId !== 'stone-hoe') return null
+    const center = this.tileAt(this.player.x, this.player.y)
+    const ahead = this.tileAhead()
+    if (center && fieldAt(this.state, center.tileX, center.tileY)) {
+      if (this.untilled(center.tileX, center.tileY)) return center
+      if (ahead && this.untilled(ahead.tileX, ahead.tileY)) return ahead
+      return center
+    }
+    if (ahead && this.untilled(ahead.tileX, ahead.tileY)) return ahead
+    return null
+  }
+
+  private inUntilledField() {
+    const center = this.tileAt(this.player.x, this.player.y)
+    return center ? this.untilled(center.tileX, center.tileY) : false
+  }
+
+  private canMarkField() {
+    if (handItem(this.state)?.itemId !== 'stone-hoe') return false
+    if (this.ghost || this.fieldGhost) return false
+    const center = this.tileAt(this.player.x, this.player.y)
+    if (center && fieldAt(this.state, center.tileX, center.tileY)) return false
+    const target = this.ahead()
+    if (target && this.targetClaims(target)) return false
+    const ahead = this.emptyTileAhead()
+    if (!ahead) return false
+    const tile = this.tileAt(ahead.x, ahead.y)
+    return !!tile && canPlaceField(this.state, tile.tileX, tile.tileY, tile.tileX, tile.tileY)
+  }
+
+  private untilled(tileX: number, tileY: number) {
+    const field = fieldAt(this.state, tileX, tileY)
+    if (!field) return false
+    return !field.tilled.some((tile) => tile.x === tileX && tile.y === tileY)
+  }
+
+  private syncActionHint() {
+    const hint = this.tillHintText()
+    const label = this.actionLabel()
+    if (!label) {
+      hint.setVisible(false)
+      return
+    }
+    hint.setText(label)
+    hint.setVisible(true)
+    hint.setPosition(this.player.x, this.player.y - this.player.displayHeight / 2 - 8)
+  }
+
+  private actionLabel() {
+    if (this.ghost || this.fieldGhost) return null
+    const hand = handItem(this.state)?.itemId
+    if (hand === 'stone-hoe') {
+      if (this.inUntilledField()) return 'E키를 눌러 밭 갈기'
+      if (this.canMarkField()) return 'E키를 눌러 밭 영역 지정'
+    }
+    if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
+    return null
+  }
+
+  private tillHintText() {
+    if (this.tillHint) return this.tillHint
+    this.tillHint = this.add
+      .text(0, 0, 'E키를 눌러 밭 갈기', {
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        fontSize: '14px',
+        color: '#f4f0e4',
+        backgroundColor: '#0a120e',
+        padding: { x: 8, y: 5 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100001)
+      .setVisible(false)
+    return this.tillHint
   }
 
   private offerBuild() {
@@ -283,6 +388,7 @@ export class WorldScene extends Phaser.Scene {
   private finishGhost() {
     if (!this.ghost) return
     this.dropGhost()
+    this.pauseHold()
     this.input.setDefaultCursor('default')
     this.hooks.onBuildDone()
   }
@@ -372,13 +478,20 @@ export class WorldScene extends Phaser.Scene {
     if (!this.fieldGhost) return
     this.fieldGhost.mark.destroy()
     this.fieldGhost = null
+    this.pauseHold()
     if (!this.ghost) this.input.setDefaultCursor('default')
+  }
+
+  private pauseHold() {
+    this.holdPaused = true
+    this.nextStrike = 0
   }
 
   private syncFields(state: State) {
     this.fieldMarks.clear()
     for (const field of state.fields) {
       paintPlot(this.fieldMarks, field, 0xf6e7a8, 0xd4b15a, true)
+      for (const tile of field.tilled) paintFurrow(this.fieldMarks, tile.x, tile.y)
     }
   }
 
@@ -396,7 +509,7 @@ export class WorldScene extends Phaser.Scene {
     return { x: centerX, y: centerY, tileX, tileY }
   }
 
-  private emptyTileAhead() {
+  private tileAhead() {
     const step = facingStep(this.facing)
     const tileX = Math.floor(this.player.x / tileSize) + step.x
     const tileY = Math.floor(this.player.y / tileSize) + step.y
@@ -407,8 +520,14 @@ export class WorldScene extends Phaser.Scene {
       y >= tileSize / 2 &&
       x <= this.mapSize.width - tileSize / 2 &&
       y <= this.mapSize.height - tileSize / 2
-    if (!inside || this.tileOccupied(tileX, tileY)) return null
-    return { x, y }
+    if (!inside) return null
+    return { x, y, tileX, tileY }
+  }
+
+  private emptyTileAhead() {
+    const tile = this.tileAhead()
+    if (!tile || this.tileOccupied(tile.tileX, tile.tileY)) return null
+    return { x: tile.x, y: tile.y }
   }
 
   private tileOccupied(tileX: number, tileY: number) {
@@ -417,7 +536,8 @@ export class WorldScene extends Phaser.Scene {
     return (
       this.state.trees.some((tree) => here(tree.x, tree.y)) ||
       this.state.rabbits.some((rabbit) => here(rabbit.x, rabbit.y)) ||
-      this.state.buildings.some((building) => here(building.x, building.y))
+      this.state.buildings.some((building) => here(building.x, building.y)) ||
+      this.state.merchants.some((merchant) => here(merchant.x, merchant.y))
     )
   }
 
@@ -429,6 +549,10 @@ export class WorldScene extends Phaser.Scene {
     if (target.kind === 'campfire') {
       this.campfireId = target.id
       this.hooks.onCampfire(target.id)
+      return
+    }
+    if (target.kind === 'merchant') {
+      this.hooks.onTrade(target.id)
       return
     }
     if (handItem(this.state)?.itemId !== 'stone-axe') return
@@ -458,6 +582,37 @@ export class WorldScene extends Phaser.Scene {
     this.night.setAlpha(nightCover(this.state.time.minutes))
   }
 
+  private syncTradeHint() {
+    for (const merchant of this.state.merchants) {
+      const sprite = this.merchantSprites.get(merchant.id)
+      const hint = this.tradeHint(merchant.id)
+      if (!sprite || !this.beside(merchant.x, merchant.y, sprite)) {
+        hint.setVisible(false)
+        continue
+      }
+      hint.setVisible(true)
+      hint.setPosition(sprite.x, sprite.y - sprite.displayHeight - 8)
+    }
+  }
+
+  private tradeHint(id: string) {
+    const existing = this.tradeHints.get(id)
+    if (existing) return existing
+    const hint = this.add
+      .text(0, 0, 'E키를 눌러 거래', {
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        fontSize: '14px',
+        color: '#f4f0e4',
+        backgroundColor: '#0a120e',
+        padding: { x: 8, y: 5 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100001)
+      .setVisible(false)
+    this.tradeHints.set(id, hint)
+    return hint
+  }
+
   private releaseCampfire() {
     const id = this.campfireId
     if (!id) return
@@ -481,6 +636,9 @@ export class WorldScene extends Phaser.Scene {
       ),
       ...this.state.buildings.map((building) =>
         this.aimAt(building.kind, building.id, building.x, building.y, this.buildingSprites.get(building.id)),
+      ),
+      ...this.state.merchants.map((merchant) =>
+        this.aimAt('merchant', merchant.id, merchant.x, merchant.y, this.merchantSprites.get(merchant.id)),
       ),
     ]
     let found: (Aim & { distance: number }) | null = null
@@ -520,6 +678,7 @@ export class WorldScene extends Phaser.Scene {
     this.player.setDepth(state.player.y)
     this.syncTrees(state)
     this.syncRabbits(state)
+    this.syncMerchants(state)
     this.syncBuildings(state)
     this.syncFields(state)
   }
@@ -542,6 +701,35 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
     sprite.setDepth(building.y)
     this.buildingSprites.set(building.id, sprite)
+  }
+
+  private syncMerchants(state: State) {
+    const alive = new Set(state.merchants.map((merchant) => merchant.id))
+    for (const [id, sprite] of this.merchantSprites) {
+      if (alive.has(id)) continue
+      this.merchantSprites.delete(id)
+      this.tweens.killTweensOf(sprite)
+      sprite.destroy()
+      this.tradeHints.get(id)?.destroy()
+      this.tradeHints.delete(id)
+    }
+    for (const merchant of state.merchants) {
+      if (!this.merchantSprites.has(merchant.id)) this.spawnMerchant(merchant)
+    }
+  }
+
+  private spawnMerchant(merchant: Merchant) {
+    const sprite = this.add.image(merchant.x, merchant.y, images.merchant.key).setOrigin(0.5, 1)
+    sprite.setDepth(merchant.y)
+    this.merchantSprites.set(merchant.id, sprite)
+    this.tweens.add({
+      targets: sprite,
+      y: merchant.y - 3,
+      duration: 720,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
   }
 
   private syncRabbits(state: State) {
@@ -684,6 +872,18 @@ export class WorldScene extends Phaser.Scene {
   }
 }
 
+function paintFurrow(graphics: Phaser.GameObjects.Graphics, tileX: number, tileY: number) {
+  const left = tileX * tileSize
+  const top = tileY * tileSize
+  graphics.fillStyle(0x6b3f22, 0.92)
+  graphics.fillRect(left + 4, top + 4, tileSize - 8, tileSize - 8)
+  graphics.lineStyle(2, 0x3a2414, 0.95)
+  for (let row = 1; row <= 3; row += 1) {
+    const y = top + (tileSize * row) / 4
+    graphics.lineBetween(left + 10, y, left + tileSize - 10, y)
+  }
+}
+
 function paintPlot(
   graphics: Phaser.GameObjects.Graphics,
   span: { x: number; y: number; w: number; h: number },
@@ -717,6 +917,14 @@ function nightCover(minutes: number) {
   const clock = ((minutes % span) + span) % span
   const sun = -Math.cos((clock / span) * Math.PI * 2)
   return Math.max(0, -sun) * 0.38
+}
+
+function placeMerchants(map: { width: number; height: number }): Merchant[] {
+  return merchantSpots.map(([x, y], index) => ({
+    id: `merchant-${index + 1}`,
+    x: Math.round(x * map.width),
+    y: Math.round(y * map.height),
+  }))
 }
 
 function placeRabbits(map: { width: number; height: number }): Rabbit[] {

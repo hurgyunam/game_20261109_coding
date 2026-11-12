@@ -16,6 +16,7 @@ export type GameHooks = {
   onWarehouse: (id: string) => void
   onCampfire: (id: string) => void
   onCampfireClose: () => void
+  onTrade: (id: string) => void
   bind: (api: GameApi) => void
 }
 

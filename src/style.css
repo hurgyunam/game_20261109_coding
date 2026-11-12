@@ -28,7 +28,8 @@ body,
 .inventory,
 .build-menu,
 .storage,
-.campfire {
+.campfire,
+.trade {
   pointer-events: auto;
 }
 
@@ -143,7 +144,8 @@ body,
 .inventory img,
 .build-menu img,
 .storage img,
-.campfire img {
+.campfire img,
+.trade img {
   width: 36px;
   height: 36px;
   image-rendering: pixelated;
@@ -154,7 +156,8 @@ body,
 .inventory button,
 .build-menu button,
 .storage button,
-.campfire button {
+.campfire button,
+.trade button {
   border: 2px solid #3d5344;
   background: rgba(10, 18, 14, 0.92);
   color: #f4f0e4;
@@ -201,6 +204,13 @@ body,
   font-size: 16px;
 }
 
+.inventory .silver {
+  margin-top: 8px;
+  color: #f2d48a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .inventory h3 {
   margin-top: 14px;
   font-size: 14px;
@@ -209,7 +219,8 @@ body,
 .inventory header button,
 .build-menu header button,
 .storage header button,
-.campfire header button {
+.campfire header button,
+.trade header button {
   padding: 4px 8px;
 }
 
@@ -312,7 +323,8 @@ body,
 }
 
 .storage,
-.campfire {
+.campfire,
+.trade {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -333,19 +345,27 @@ body,
   width: min(280px, calc(100% - 32px));
 }
 
+.trade {
+  width: min(360px, calc(100% - 32px));
+}
+
 .storage header,
 .campfire header,
+.trade header,
 .storage h2,
 .campfire h2,
+.trade h2,
 .storage h3,
 .campfire h3,
 .storage p,
-.campfire p {
+.campfire p,
+.trade p {
   margin: 0;
 }
 
 .storage header,
-.campfire header {
+.campfire header,
+.trade header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -353,8 +373,38 @@ body,
 }
 
 .storage h2,
-.campfire h2 {
+.campfire h2,
+.trade h2 {
   font-size: 16px;
+}
+
+.trade .silver {
+  margin-top: 10px;
+  color: #f2d48a;
+  font-weight: 700;
+}
+
+.trade .meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trade .price {
+  color: #d5e0d4;
+  font-size: 12px;
+}
+
+.trade .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.trade .actions button {
+  padding: 4px 8px;
 }
 
 .storage h3 {
@@ -381,6 +431,50 @@ body,
   width: 100%;
   margin-top: 12px;
   padding: 8px 10px;
+}
+
+.skills {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 196px;
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(10, 18, 14, 0.88);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+}
+
+.skills h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.skills ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.skills li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.skills .xp {
+  color: #f2d48a;
+  font-variant-numeric: tabular-nums;
+}
+
+.skills .techs {
+  grid-column: 1 / -1;
+  color: #d5e0d4;
+  font-size: 12px;
 }
 
 @media (max-width: 560px) {

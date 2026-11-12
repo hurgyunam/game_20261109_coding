@@ -30,12 +30,18 @@ export type Merchant = {
   y: number
 }
 
+export type FieldTile = {
+  x: number
+  y: number
+}
+
 export type Field = {
   id: string
   x: number
   y: number
   w: number
   h: number
+  tilled: FieldTile[]
 }
 
 export type Storage = {
@@ -87,6 +93,7 @@ export type State = {
   merchants: Merchant[]
   buildings: Building[]
   fields: Field[]
+  silver: number
   time: {
     minutes: number
     day: number
@@ -99,6 +106,7 @@ export function createState(
   body: { width: number; height: number },
   trees: Tree[],
   rabbits: Rabbit[],
+  merchants: Merchant[] = [],
 ): State {
   const minX = body.width / 2
   const minY = body.height / 2
@@ -124,9 +132,10 @@ export function createState(
     >,
     trees: trees.map((tree) => ({ ...tree })),
     rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
-    merchants: [],
+    merchants: merchants.map((merchant) => ({ ...merchant })),
     buildings: [],
     fields: [],
+    silver: defs.trade.silver,
     time: {
       minutes: defs.time.startMinute,
       day: 0,
