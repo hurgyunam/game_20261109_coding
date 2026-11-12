@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
 import { buildingIds, defs, type BuildingId } from '../core/defs'
+import { canPlaceField, fieldSpan, placeField } from '../core/farm'
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
@@ -16,7 +17,7 @@ const maxFrameSeconds = 0.1
 const holdRepeatSeconds = 0.2
 const reachDistance = 120
 const reachDot = 0.6
-const tileSize = 64
+const tileSize = defs.map.tile
 
 const treeSpots = [
   [0.575, 0.378],
@@ -51,6 +52,20 @@ type Aim = {
   id: string
 }
 
+type TilePoint = {
+  x: number
+  y: number
+}
+
+type FieldGhost = {
+  step: 'start' | 'end'
+  aim: TilePoint
+  anchor: TilePoint | null
+  follow: boolean
+  pointer: { x: number; y: number }
+  mark: Phaser.GameObjects.Graphics
+}
+
 export class WorldScene extends Phaser.Scene {
   private state!: State
   private player!: Phaser.GameObjects.Image
@@ -62,6 +77,8 @@ export class WorldScene extends Phaser.Scene {
   private buildingSprites = new Map<string, Phaser.GameObjects.Image>()
   private mapSize = { width: 0, height: 0 }
   private ghost: { kind: BuildingId; sprite: Phaser.GameObjects.Image } | null = null
+  private fieldGhost: FieldGhost | null = null
+  private fieldMarks!: Phaser.GameObjects.Graphics
   private nextStrike = 0
   private facing = { x: 1, y: 0 }
   private campfireId: string | null = null
@@ -79,6 +96,7 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     const floor = this.add.image(0, 0, images.floor.key).setOrigin(0, 0)
+    this.fieldMarks = this.add.graphics().setDepth(1)
     const player = this.add.image(0, 0, images.player.key)
     const map = { width: floor.width, height: floor.height }
     this.mapSize = map
@@ -133,10 +151,11 @@ export class WorldScene extends Phaser.Scene {
       }
       if (action.type === 'cancel') {
         this.finishGhost()
+        this.finishField()
         continue
       }
       if (action.type === 'use') {
-        if (this.ghost) {
+        if (this.ghost || this.fieldGhost) {
           struck = true
           continue
         }
@@ -172,10 +191,12 @@ export class WorldScene extends Phaser.Scene {
     this.view.update(control.look, follow, dt)
     if (this.ghost && handItem(this.state)?.itemId !== 'stone-hammer') this.finishGhost()
     else this.syncGhost(pointer)
+    if (this.fieldGhost && handItem(this.state)?.itemId !== 'stone-hoe') this.finishField()
+    else this.syncField(pointer)
   }
 
   private repeatStrike(pointer: Pointer, use: boolean, struck: boolean, dt: number) {
-    if (this.ghost) {
+    if (this.ghost || this.fieldGhost) {
       if (!pointer.down && !use) this.nextStrike = 0
       return
     }
@@ -201,6 +222,7 @@ export class WorldScene extends Phaser.Scene {
       this.useTarget(target)
       return
     }
+    if (this.beginField()) return
     this.offerBuild()
   }
 
@@ -272,6 +294,94 @@ export class WorldScene extends Phaser.Scene {
     this.ghost = null
   }
 
+  private beginField() {
+    if (this.ghost || this.fieldGhost) return false
+    if (handItem(this.state)?.itemId !== 'stone-hoe') return false
+    const ahead = this.emptyTileAhead()
+    if (!ahead) return false
+    const tile = this.tileAt(ahead.x, ahead.y)
+    if (!tile || !canPlaceField(this.state, tile.tileX, tile.tileY, tile.tileX, tile.tileY)) return false
+    const pointer = this.controls.pointer()
+    const mark = this.add.graphics().setDepth(2)
+    this.fieldGhost = {
+      step: 'start',
+      aim: { x: tile.tileX, y: tile.tileY },
+      anchor: null,
+      follow: false,
+      pointer: { x: pointer.x, y: pointer.y },
+      mark,
+    }
+    this.input.setDefaultCursor('crosshair')
+    this.drawFieldGhost()
+    return true
+  }
+
+  private syncField(pointer: Pointer) {
+    const mode = this.fieldGhost
+    if (!mode) return
+    if (!mode.follow && Math.hypot(pointer.x - mode.pointer.x, pointer.y - mode.pointer.y) > 8) {
+      mode.follow = true
+    }
+    if (mode.follow) {
+      const tile = this.tileAt(pointer.x, pointer.y)
+      if (tile) mode.aim = { x: tile.tileX, y: tile.tileY }
+    }
+    this.drawFieldGhost()
+  }
+
+  private drawFieldGhost() {
+    const mode = this.fieldGhost
+    if (!mode) return
+    const x1 = mode.anchor?.x ?? mode.aim.x
+    const y1 = mode.anchor?.y ?? mode.aim.y
+    const span = fieldSpan(x1, y1, mode.aim.x, mode.aim.y)
+    mode.mark.clear()
+    if (!span) return
+    const open = canPlaceField(this.state, x1, y1, mode.aim.x, mode.aim.y)
+    paintPlot(mode.mark, span, open ? 0x8fd9a8 : 0xf0a0a0, open ? 0xd8ffe4 : 0xffb4b4, false)
+  }
+
+  private confirmField(x: number, y: number) {
+    const mode = this.fieldGhost
+    if (!mode) return false
+    if (mode.follow) {
+      const tile = this.tileAt(x, y)
+      if (!tile) return true
+      mode.aim = { x: tile.tileX, y: tile.tileY }
+    }
+    const aim = mode.aim
+    if (mode.step === 'start') {
+      if (!canPlaceField(this.state, aim.x, aim.y, aim.x, aim.y)) return true
+      mode.anchor = { ...aim }
+      mode.step = 'end'
+      mode.follow = false
+      mode.pointer = { x, y }
+      this.drawFieldGhost()
+      return true
+    }
+    const anchor = mode.anchor
+    if (!anchor) return true
+    const next = placeField(this.state, anchor.x, anchor.y, aim.x, aim.y)
+    if (next === this.state) return true
+    this.finishField()
+    this.commit(next)
+    return true
+  }
+
+  private finishField() {
+    if (!this.fieldGhost) return
+    this.fieldGhost.mark.destroy()
+    this.fieldGhost = null
+    if (!this.ghost) this.input.setDefaultCursor('default')
+  }
+
+  private syncFields(state: State) {
+    this.fieldMarks.clear()
+    for (const field of state.fields) {
+      paintPlot(this.fieldMarks, field, 0xf6e7a8, 0xd4b15a, true)
+    }
+  }
+
   private tileAt(x: number, y: number) {
     const tileX = Math.floor(x / tileSize)
     const tileY = Math.floor(y / tileSize)
@@ -334,6 +444,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (action.type !== 'click') return
     if (this.confirmGhost(action.x, action.y)) return
+    if (this.confirmField(action.x, action.y)) return
     const treeId = this.treeAt(action.x, action.y)
     if (!treeId) return
     this.useTarget({ kind: 'tree', id: treeId })
@@ -410,6 +521,7 @@ export class WorldScene extends Phaser.Scene {
     this.syncTrees(state)
     this.syncRabbits(state)
     this.syncBuildings(state)
+    this.syncFields(state)
   }
 
   private syncBuildings(state: State) {
@@ -570,6 +682,34 @@ export class WorldScene extends Phaser.Scene {
     }
     return found?.id ?? null
   }
+}
+
+function paintPlot(
+  graphics: Phaser.GameObjects.Graphics,
+  span: { x: number; y: number; w: number; h: number },
+  fill: number,
+  line: number,
+  hatch: boolean,
+) {
+  const left = span.x * tileSize
+  const top = span.y * tileSize
+  const width = span.w * tileSize
+  const height = span.h * tileSize
+  graphics.fillStyle(fill, hatch ? 0.4 : 0.48)
+  graphics.fillRect(left, top, width, height)
+  if (hatch) {
+    graphics.lineStyle(2, line, 0.9)
+    const gap = 16
+    for (let offset = -height + gap; offset < width; offset += gap) {
+      const startX = left + Math.max(0, offset)
+      const startY = top + Math.max(0, -offset)
+      const endX = left + Math.min(width, offset + height)
+      const endY = top + (endX - left) - offset
+      graphics.lineBetween(startX, startY, endX, endY)
+    }
+  }
+  graphics.lineStyle(2, line, 0.95)
+  graphics.strokeRect(left + 1, top + 1, Math.max(0, width - 2), Math.max(0, height - 2))
 }
 
 function nightCover(minutes: number) {

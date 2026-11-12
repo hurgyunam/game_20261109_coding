@@ -1,4 +1,4 @@
-export const itemIds = ['log', 'stone-axe', 'stone-hammer', 'meat', 'fur', 'cooked-meat'] as const
+export const itemIds = ['log', 'stone-axe', 'stone-hammer', 'stone-hoe', 'meat', 'fur', 'cooked-meat'] as const
 
 export type ItemId = (typeof itemIds)[number]
 
@@ -6,7 +6,7 @@ export const skillIds = ['gather', 'farm', 'hunt', 'craft'] as const
 
 export type SkillId = (typeof skillIds)[number]
 
-export const recipeIds = ['stone-axe', 'stone-hammer'] as const
+export const recipeIds = ['stone-axe', 'stone-hammer', 'stone-hoe'] as const
 
 export type RecipeId = (typeof recipeIds)[number]
 
@@ -54,6 +54,7 @@ export const defs = {
     log: { weight: 5 },
     'stone-axe': { weight: 4 },
     'stone-hammer': { weight: 4 },
+    'stone-hoe': { weight: 4 },
     meat: { weight: 2 },
     fur: { weight: 1 },
     'cooked-meat': { weight: 2 },
@@ -73,12 +74,22 @@ export const defs = {
       ingredients: [] as Stack[],
       result: { itemId: 'stone-hammer', count: 1 },
     },
+    'stone-hoe': {
+      ingredients: [] as Stack[],
+      result: { itemId: 'stone-hoe', count: 1 },
+    },
   } satisfies Record<RecipeId, { ingredients: Stack[]; result: Stack }>,
   buildings: {
     warehouse: {
       slots: 18,
       limit: 80,
     },
+  },
+  map: {
+    tile: 64,
+  },
+  field: {
+    maxSide: 10,
   },
   cooking: {
     campfire: {

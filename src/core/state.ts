@@ -24,6 +24,20 @@ export type Rabbit = {
   y: number
 }
 
+export type Merchant = {
+  id: string
+  x: number
+  y: number
+}
+
+export type Field = {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 export type Storage = {
   slots: Slot[]
   weight: number
@@ -70,7 +84,9 @@ export type State = {
   skills: Record<SkillId, SkillState>
   trees: Tree[]
   rabbits: Rabbit[]
+  merchants: Merchant[]
   buildings: Building[]
+  fields: Field[]
   time: {
     minutes: number
     day: number
@@ -108,7 +124,9 @@ export function createState(
     >,
     trees: trees.map((tree) => ({ ...tree })),
     rabbits: rabbits.map((rabbit) => ({ ...rabbit })),
+    merchants: [],
     buildings: [],
+    fields: [],
     time: {
       minutes: defs.time.startMinute,
       day: 0,

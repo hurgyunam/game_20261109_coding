@@ -8,6 +8,7 @@ import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
 import stoneHammerUrl from '../../assets/stone-hammer.png'
+import stoneHoeUrl from '../../assets/stone-hoe.png'
 import treeUrl from '../../assets/tree.png'
 import warehouseUrl from '../../assets/warehouse.png'
 
@@ -22,6 +23,7 @@ export const images = {
   fur: { key: 'fur', url: furUrl },
   'stone-axe': { key: 'stone-axe', url: stoneAxeUrl },
   'stone-hammer': { key: 'stone-hammer', url: stoneHammerUrl },
+  'stone-hoe': { key: 'stone-hoe', url: stoneHoeUrl },
   warehouse: { key: 'warehouse', url: warehouseUrl },
   campfire: { key: 'campfire', url: campfireUrl },
 } as const

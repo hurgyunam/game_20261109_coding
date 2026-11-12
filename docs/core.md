@@ -13,6 +13,7 @@ src/core/
   craft.ts
   hunt.ts
   build.ts
+  farm.ts
   cook.ts
   skills.ts
   time.ts
@@ -24,7 +25,8 @@ src/core/
 - 플레이어 위치와 기본 이동 속도
 - 인벤토리. 슬롯, 슬롯별 아이템, 1–9 핸드 인덱스, 현재 총중량, 소지 한도
 - 스킬 4종. 채집, 농사, 사냥, 제조. 각각 경험치, 레벨, 해금된 테크 id
-- 맵 위의 나무, 토끼, 설치된 건물
+- 맵 위의 나무, 토끼, 상인, 설치된 건물
+- 밭. 두 칸을 꼭짓점으로 하는 직사각형이고, 시작 칸과 끝 칸을 포함한다
 - 창고마다 별도의 인벤토리, 총중량, 한도
 - 모닥불의 위치와 id
 - 시각. 자정부터 흐른 분. 시작은 오전 6시다
@@ -34,8 +36,9 @@ src/core/
 
 `defs.ts`가 규칙을 해석하는 표를 가진다. 수치는 함수 안에 적지 않고 이 표에 둔다.
 
-- 아이템 id와 무게. `log`, `stone-axe`, `stone-hammer`, `meat`, `fur`, `cooked-meat`
-- 레시피. 시작 시점에는 맨손으로 `stone-axe`, `stone-hammer`를 만들 수 있다
+- 아이템 id와 무게. `log`, `stone-axe`, `stone-hammer`, `stone-hoe`, `meat`, `fur`, `cooked-meat`
+- 레시피. 시작 시점에는 맨손으로 `stone-axe`, `stone-hammer`, `stone-hoe`를 만들 수 있다
+- 밭. 한 변의 최대는 10칸이다. 칸 크기는 맵 타일 크기와 같다
 - 건물. `warehouse`, `campfire`. 창고 한도는 캐릭터 소지 한도보다 크다
 - 드롭. 토끼는 `meat`와 `fur`
 - 조리. 모닥불에서 `meat`는 `cooked-meat`가 된다
@@ -59,6 +62,7 @@ src/core/
 - `craft`: 레시피의 재료를 빼고 결과물을 넣는다. 시작 레시피는 맨손 제작이다. 제조 경험치를 준다
 - `hunt`: 핸드가 `stone-axe`이고 대상이 토끼일 때 토끼를 제거하고 `meat`, `fur`를 넣은 뒤 사냥 경험치를 준다
 - `place`: 핸드가 `stone-hammer`일 때 지정 좌표에 `warehouse` 또는 `campfire`를 등록한다
+- `placeField`: 핸드가 `stone-hoe`일 때 두 칸을 꼭짓점으로 밭을 등록한다. 같은 칸이면 1×1이다. 한 변이 10칸을 넘거나, 영역 안에 나무, 건물, 토끼를 포함한 야생동물, 상인, 이미 있는 밭이 있으면 상태를 바꾸지 않는다
 - `transfer`: 캐릭터 인벤토리와 창고 인벤토리 사이에서 아이템을 옮긴다. 양쪽 한도를 각각 계산한다
 - `cook`: 대상이 `campfire`일 때 `meat`를 빼고 `cooked-meat`를 넣는다
 - `tick`: 경과 시간만큼 시각을 진행한다. 오전 6시가 되면 하루가 지나고, 7일이 되면 다음 계절이 된다
