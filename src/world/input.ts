@@ -13,6 +13,7 @@ export type Action =
   | { type: 'inventory' }
   | { type: 'use' }
   | { type: 'cancel' }
+  | { type: 'sprint' }
 
 export type Pointer = {
   down: boolean
@@ -137,6 +138,7 @@ export function createControlReader(scene: Phaser.Scene) {
     'E',
     'I',
     'ESC',
+    'SHIFT',
     cursors.left.keyCode,
     cursors.right.keyCode,
     cursors.up.keyCode,
@@ -149,6 +151,10 @@ export function createControlReader(scene: Phaser.Scene) {
   }
   keyboard.on('keydown-I', tap('inventory'))
   keyboard.on('keydown-E', tap('use'))
+  keyboard.on('keydown-SHIFT', (event: KeyboardEvent) => {
+    if (event.repeat) return
+    actions.push({ type: 'sprint' })
+  })
   keyboard.on('keydown-ESC', (event: KeyboardEvent) => {
     if (event.repeat) return
     actions.push({ type: 'cancel' })

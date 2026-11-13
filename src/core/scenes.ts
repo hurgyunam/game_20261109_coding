@@ -1,6 +1,6 @@
 import { defs, type CropId, type Stack } from './defs'
 import { addItem, weightOf, withSlots } from './inventory'
-import { createStorage, type Building, type Field, type FieldTile, type State, type Storage } from './state'
+import { createStorage, type Building, type Field, type FieldTile, type State, type Storage, type Tree } from './state'
 import { seasonOn } from './time'
 
 const here = { dx: 0, dy: 0 }
@@ -42,6 +42,8 @@ const scenes: Record<string, (state: State) => State> = {
   hungry,
   thirsty,
   meal,
+  sprint,
+  spent,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -187,9 +189,30 @@ function meal(state: State): State {
   )
 }
 
+function sprint(state: State): State {
+  return { ...state, player: { ...state.player, x: state.bounds.minX } }
+}
+
+function spent(state: State): State {
+  const stood = stand(withVitals(state, { stamina: 0 }))
+  const foot = footOf(stood)
+  const carried = carry(clearSpan(stood, { x: foot.x - 2, y: foot.y - 2, w: 5, h: 5 }), [
+    { itemId: 'stone-axe', count: 1 },
+    { itemId: 'stone-hammer', count: 1 },
+  ])
+  const tile = defs.map.tile
+  const tree: Tree = {
+    id: 'tree-spent',
+    x: (foot.x + 1) * tile + tile / 2,
+    y: foot.y * tile + tile / 2,
+    hits: 0,
+  }
+  return { ...carried, trees: [...carried.trees, tree] }
+}
+
 function withVitals(
   state: State,
-  patch: Partial<Pick<State['survival'], 'hunger' | 'thirst' | 'health'>>,
+  patch: Partial<Pick<State['survival'], 'hunger' | 'thirst' | 'health' | 'stamina'>>,
 ): State {
   return {
     ...state,
@@ -198,6 +221,8 @@ function withVitals(
       thirst: patch.thirst ?? state.survival.thirst,
       health: patch.health ?? state.survival.health,
       meter: 0,
+      stamina: patch.stamina ?? state.survival.stamina,
+      rest: 0,
     },
   }
 }

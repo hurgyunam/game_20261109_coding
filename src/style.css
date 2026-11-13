@@ -485,7 +485,7 @@ body,
   position: absolute;
   left: 16px;
   bottom: 112px;
-  width: 220px;
+  width: 248px;
   margin: 0;
   padding: 10px 12px;
   background: rgba(10, 18, 14, 0.88);
@@ -495,12 +495,16 @@ body,
 
 .vitals p {
   display: grid;
-  grid-template-columns: 2.2em 2.4em 1fr;
+  grid-template-columns: 4.6em 2.4em 1fr;
   gap: 8px;
   align-items: center;
   margin: 0;
   font-size: 13px;
   font-weight: 700;
+}
+
+.vitals p > span:first-child {
+  white-space: nowrap;
 }
 
 .vitals p + p {
@@ -535,6 +539,21 @@ body,
 
 .vitals p[data-vital='health'] .fill {
   background: #d4655a;
+}
+
+.vitals p[data-vital='stamina'] .fill {
+  background: #c6d36a;
+}
+
+.vitals .pace {
+  display: block;
+  margin-top: 8px;
+  color: #d5e0d4;
+  font-size: 12px;
+}
+
+.vitals .pace[data-pace='sprint'] {
+  color: #e4ef9a;
 }
 
 .game-over {

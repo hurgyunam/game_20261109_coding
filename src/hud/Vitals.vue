@@ -7,9 +7,10 @@ defineProps<{
 }>()
 
 const rows = [
-  { key: 'hunger', label: '허기' },
-  { key: 'thirst', label: '갈증' },
-  { key: 'health', label: '체력' },
+  { key: 'hunger', label: '허기', max: defs.vitals.max },
+  { key: 'thirst', label: '갈증', max: defs.vitals.max },
+  { key: 'health', label: '체력', max: defs.vitals.max },
+  { key: 'stamina', label: '스테미나', max: defs.stamina.max },
 ] as const
 </script>
 
@@ -19,11 +20,11 @@ const rows = [
       <span>{{ row.label }}</span>
       <span class="value">{{ state.survival[row.key] }}</span>
       <span class="track" aria-hidden="true">
-        <span
-          class="fill"
-          :style="{ width: `${(state.survival[row.key] / defs.vitals.max) * 100}%` }"
-        ></span>
+        <span class="fill" :style="{ width: `${(state.survival[row.key] / row.max) * 100}%` }"></span>
       </span>
+    </p>
+    <p class="pace" :data-pace="state.player.sprinting ? 'sprint' : 'walk'">
+      {{ state.player.sprinting ? '달리기' : '걷기' }}
     </p>
   </section>
 </template>

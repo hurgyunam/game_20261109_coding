@@ -6,6 +6,11 @@ export type Direction = {
   y: number
 }
 
+export function sprint(state: State): State {
+  if (state.survival.health <= 0) return state
+  return { ...state, player: { ...state.player, sprinting: !state.player.sprinting } }
+}
+
 export function move(state: State, direction: Direction, dt: number): State {
   if (state.survival.health <= 0) return state
   if (dt <= 0 || (direction.x === 0 && direction.y === 0)) return state
@@ -32,10 +37,9 @@ export function move(state: State, direction: Direction, dt: number): State {
 }
 
 function travelSpeed(state: State) {
-  if (state.inventory.weight > state.inventory.limit) {
-    return state.player.speed * defs.inventory.slowdown
-  }
-  return state.player.speed
+  const pace = state.player.sprinting && state.survival.stamina > 0 ? defs.stamina.pace : 1
+  const load = state.inventory.weight > state.inventory.limit ? defs.inventory.slowdown : 1
+  return state.player.speed * pace * load
 }
 
 function clamp(value: number, min: number, max: number) {

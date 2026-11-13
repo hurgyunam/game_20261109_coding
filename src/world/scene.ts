@@ -17,7 +17,7 @@ import {
 import { chop } from '../core/gather'
 import { hunt } from '../core/hunt'
 import { handItem, selectSlot } from '../core/inventory'
-import { move } from '../core/move'
+import { move, sprint } from '../core/move'
 import { applyScene } from '../core/scenes'
 import { createState, type Building, type Merchant, type Rabbit, type River, type State, type Tree } from '../core/state'
 import { drink, eat } from '../core/survive'
@@ -177,6 +177,10 @@ export class WorldScene extends Phaser.Scene {
     const pointer = this.controls.pointer()
     let struck = false
     for (const action of this.controls.consume()) {
+      if (action.type === 'sprint') {
+        this.commit(sprint(this.state))
+        continue
+      }
       if (action.type === 'inventory') {
         this.hooks.onInventory()
         continue

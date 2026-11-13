@@ -41,6 +41,8 @@ export type Survival = {
   thirst: number
   health: number
   meter: number
+  stamina: number
+  rest: number
 }
 
 export type FieldTile = {
@@ -90,6 +92,7 @@ export type State = {
     x: number
     y: number
     speed: number
+    sprinting: boolean
   }
   bounds: {
     minX: number
@@ -137,6 +140,7 @@ export function createState(
       x: map.width / 2,
       y: map.height / 2,
       speed: defs.player.speed,
+      sprinting: false,
     },
     bounds: { minX, minY, maxX, maxY },
     inventory: {
@@ -159,6 +163,8 @@ export function createState(
       thirst: defs.vitals.thirst,
       health: defs.vitals.health,
       meter: 0,
+      stamina: defs.stamina.start,
+      rest: 0,
     },
     fields: [],
     silver: defs.trade.silver,
