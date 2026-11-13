@@ -30,6 +30,12 @@ function crossedDays(minutes: number, delta: number) {
   return Math.floor((intoDay + delta) / span)
 }
 
+export function canSleep(minutes: number) {
+  const span = defs.time.dayMinutes
+  const clock = ((minutes % span) + span) % span
+  return clock >= defs.time.bedtime || clock < defs.time.startMinute
+}
+
 export function seasonOn(day: number): SeasonId {
   const yearDays = defs.calendar.yearDays
   const dayOfYear = ((day % yearDays) + yearDays) % yearDays

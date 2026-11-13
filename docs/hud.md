@@ -19,7 +19,7 @@ src/hud/
 
 - `Hotbar`: 핸드 1–9와 현재 핸드를 보여 준다. 그 뒤의 소지 칸은 그리지 않는다. 선택은 월드가 호출한 `selectSlot` 결과를 반영한다
 - `InventoryPanel`: 소지 칸에 있는 아이템과 현재 총중량, 소지 한도, `silver`를 보여 준다. 핸드 밖의 칸에 있는 아이템도 포함한다
-- `BuildMenu`: 월드가 망치를 든 채 바라본 빈 타일 좌표를 알리면 연다. `warehouse` 또는 `campfire`를 고르면 그 좌표로 `place`를 호출하고 닫는다
+- `BuildMenu`: 월드가 망치를 든 채 바라본 빈 타일 좌표를 알리면 연다. `warehouse`, `campfire`, `house`, `oven`을 고르면 그 좌표로 `place`를 호출하고 닫는다
 - `StoragePanel`: 월드가 창고 id를 알리면 연다. 캐릭터와 창고에 있는 아이템을 모두 보여 준다. 옮기는 조작은 `transfer`를 호출한다. 창고 한도는 그 건물 정의의 값을 표시한다. 칸 수는 세지 않는다
 - `CampfirePanel`: 월드가 모닥불 id를 알리면 연다. 고기 굽기는 `cook`을 호출한다
 - `TradePanel`: 월드가 상인 id를 알리면 연다. 구매가 표의 아이템마다 구매는 `buy`, 판매는 `sell`을 호출한다. `silver`와 구매가, 그 절반인 판매가를 보여 준다

@@ -76,7 +76,7 @@ type Placed = {
 
 export type Building =
   | (Placed & { kind: 'warehouse'; storage: Storage })
-  | (Placed & { kind: 'campfire' })
+  | (Placed & { kind: 'campfire' | 'house' | 'oven' })
 
 export function createStorage(): Storage {
   const warehouse = defs.buildings.warehouse

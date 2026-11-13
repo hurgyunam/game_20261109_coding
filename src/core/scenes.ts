@@ -1,4 +1,4 @@
-import { defs, type CropId, type Stack } from './defs'
+import { defs, type BuildingId, type CropId, type Stack } from './defs'
 import { addItem, weightOf, withSlots } from './inventory'
 import { createStorage, type Building, type Field, type FieldTile, type State, type Storage, type Tree } from './state'
 import { seasonOn } from './time'
@@ -44,6 +44,7 @@ const scenes: Record<string, (state: State) => State> = {
   meal,
   sprint,
   spent,
+  lodge,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -277,7 +278,11 @@ function stand(state: State): State {
   return { ...state, player: { ...state.player, x, y } }
 }
 
-function placeBuilding(state: State, kind: 'warehouse' | 'campfire', logs = 0): State {
+function lodge(state: State): State {
+  return placeBuilding(atDay(stand(state), 0), 'house')
+}
+
+function placeBuilding(state: State, kind: BuildingId, logs = 0): State {
   const tile = defs.map.tile
   const foot = footOf(state)
   const tileX = foot.x
@@ -287,7 +292,7 @@ function placeBuilding(state: State, kind: 'warehouse' | 'campfire', logs = 0): 
   const building: Building =
     kind === 'warehouse'
       ? { id: 'warehouse-1', kind, x, y, storage: stocked(logs) }
-      : { id: 'campfire-1', kind, x, y }
+      : { id: `${kind}-1`, kind, x, y }
   return clearSpan(
     { ...state, buildings: [...state.buildings, building] },
     { x: tileX, y: foot.y, w: 1, h: buildingLead + 1 },

@@ -267,7 +267,7 @@ body,
   top: 42%;
   transform: translate(-50%, -50%);
   z-index: 3;
-  width: 220px;
+  width: 280px;
   padding: 14px;
   background: rgba(10, 18, 14, 0.94);
   border: 2px solid #3d5344;
@@ -312,6 +312,7 @@ body,
 
 .build-menu .choices {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
 }

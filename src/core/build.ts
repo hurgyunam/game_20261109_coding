@@ -12,14 +12,16 @@ export function place(state: State, buildingId: string, x: number, y: number): S
   if (!paid) return state
 
   const count = paid.buildings.filter((building) => building.kind === buildingId).length + 1
-  const building: Building =
-    buildingId === 'warehouse'
-      ? { id: `${buildingId}-${count}`, kind: 'warehouse', x, y, storage: createStorage() }
-      : { id: `${buildingId}-${count}`, kind: 'campfire', x, y }
   return {
     ...paid,
-    buildings: [...paid.buildings, building],
+    buildings: [...paid.buildings, createBuilding(buildingId, count, x, y)],
   }
+}
+
+function createBuilding(buildingId: BuildingId, count: number, x: number, y: number): Building {
+  const id = `${buildingId}-${count}`
+  if (buildingId === 'warehouse') return { id, kind: 'warehouse', x, y, storage: createStorage() }
+  return { id, kind: buildingId, x, y }
 }
 
 function isBuilding(buildingId: string): buildingId is BuildingId {

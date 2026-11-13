@@ -38,7 +38,7 @@ export const recipeIds = ['stone-axe', 'stone-hammer', 'stone-hoe', 'stone-sickl
 
 export type RecipeId = (typeof recipeIds)[number]
 
-export const buildingIds = ['warehouse', 'campfire'] as const
+export const buildingIds = ['warehouse', 'campfire', 'house', 'oven'] as const
 
 export type BuildingId = (typeof buildingIds)[number]
 
@@ -200,6 +200,7 @@ export const defs = {
   },
   time: {
     startMinute: 6 * 60,
+    bedtime: 19 * 60,
     dayMinutes: 24 * 60,
     daySeconds: 4 * 60,
     testPace: 1,

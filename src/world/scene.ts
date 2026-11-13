@@ -21,7 +21,7 @@ import { move, sprint } from '../core/move'
 import { applyScene } from '../core/scenes'
 import { createState, type Building, type Merchant, type Rabbit, type River, type State, type Tree } from '../core/state'
 import { drink, eat } from '../core/survive'
-import { tick } from '../core/time'
+import { canSleep, tick } from '../core/time'
 import { images } from './assets'
 import { createCamera } from './camera'
 import type { GameHooks } from './game'
@@ -64,7 +64,7 @@ const rabbitSpots = [
 const merchantSpots = [[0.7067, 0.6933]] as const
 
 type Aim = {
-  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire' | 'merchant' | 'river'
+  kind: 'tree' | 'rabbit' | 'warehouse' | 'campfire' | 'house' | 'oven' | 'merchant' | 'river'
   id: string
 }
 
@@ -100,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
   private fieldMarks!: Phaser.GameObjects.Graphics
   private cropSprites = new Map<string, Phaser.GameObjects.Image>()
   private tillHint: Phaser.GameObjects.Text | null = null
+  private houseHint: Phaser.GameObjects.Text | null = null
   private nextStrike = 0
   private holdPaused = false
   private facing = { x: 1, y: 0 }
@@ -171,6 +172,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.state.survival.health <= 0) {
       this.controls.consume()
       this.tillHint?.setVisible(false)
+      this.houseHint?.setVisible(false)
       return
     }
     const control = this.controls.read()
@@ -225,6 +227,7 @@ export class WorldScene extends Phaser.Scene {
     this.shadeNight()
     this.releaseCampfire()
     this.syncTradeHint()
+    this.syncHouseHint()
     this.syncActionHint()
     if (control.move.x < 0) this.player.setFlipX(true)
     else if (control.move.x > 0) this.player.setFlipX(false)
@@ -279,7 +282,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private targetClaims(target: Aim) {
-    if (target.kind === 'warehouse' || target.kind === 'campfire' || target.kind === 'merchant') return true
+    if (
+      target.kind === 'warehouse' ||
+      target.kind === 'campfire' ||
+      target.kind === 'house' ||
+      target.kind === 'oven' ||
+      target.kind === 'merchant'
+    )
+      return true
     return handItem(this.state)?.itemId === 'stone-axe' && (target.kind === 'tree' || target.kind === 'rabbit')
   }
 
@@ -716,6 +726,7 @@ export class WorldScene extends Phaser.Scene {
       this.hooks.onTrade(target.id)
       return
     }
+    if (target.kind === 'house' || target.kind === 'oven') return
     if (handItem(this.state)?.itemId !== 'stone-axe') return
     const next = target.kind === 'tree' ? chop(this.state, target.id) : hunt(this.state, target.id)
     this.commit(next)
@@ -741,6 +752,47 @@ export class WorldScene extends Phaser.Scene {
 
   private shadeNight() {
     this.night.setAlpha(nightCover(this.state.time.minutes))
+  }
+
+  private syncHouseHint() {
+    const hint = this.houseHintText()
+    const house = this.houseAhead()
+    const sprite = house ? this.buildingSprites.get(house.id) : undefined
+    if (!house || !sprite) {
+      hint.setVisible(false)
+      return
+    }
+    const open = canSleep(this.state.time.minutes)
+    hint.setText(open ? 'E를 눌러 취침' : '낮에는 잘 수 없습니다')
+    hint.setColor(open ? '#f4f0e4' : '#6e756c')
+    hint.setBackgroundColor(open ? '#0a120e' : '#1a211d')
+    hint.setAlpha(open ? 1 : 0.78)
+    hint.setVisible(true)
+    hint.setPosition(sprite.x, sprite.y - sprite.displayHeight - 8)
+  }
+
+  private houseAhead() {
+    if (this.ghost || this.fieldGhost) return null
+    const target = this.ahead()
+    if (target?.kind !== 'house') return null
+    return this.state.buildings.find((building) => building.id === target.id && building.kind === 'house') ?? null
+  }
+
+  private houseHintText() {
+    if (this.houseHint) return this.houseHint
+    this.houseHint = this.add
+      .text(0, 0, 'E를 눌러 취침', {
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        fontSize: '14px',
+        color: '#f4f0e4',
+        backgroundColor: '#0a120e',
+        align: 'center',
+        padding: { x: 8, y: 5 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100001)
+      .setVisible(false)
+    return this.houseHint
   }
 
   private syncTradeHint() {

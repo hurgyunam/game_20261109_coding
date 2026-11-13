@@ -7,11 +7,13 @@ import flaxUrl from '../../assets/flax.png'
 import flaxSeedUrl from '../../assets/flax-seed.png'
 import floorUrl from '../../assets/floor.png'
 import furUrl from '../../assets/fur.png'
+import houseUrl from '../../assets/house.png'
 import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
 import merchantUrl from '../../assets/merchant.png'
 import oatUrl from '../../assets/oat.png'
 import oatSeedUrl from '../../assets/oat-seed.png'
+import ovenUrl from '../../assets/oven.png'
 import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
 import riverUrl from '../../assets/river.png'
@@ -54,4 +56,6 @@ export const images = {
   'wheat-seed': { key: 'wheat-seed', url: wheatSeedUrl },
   warehouse: { key: 'warehouse', url: warehouseUrl },
   campfire: { key: 'campfire', url: campfireUrl },
+  house: { key: 'house', url: houseUrl },
+  oven: { key: 'oven', url: ovenUrl },
 } as const
