@@ -1,5 +1,17 @@
-import { defs } from './defs'
+import { defs, isFoodId } from './defs'
+import { withSlots } from './inventory'
 import type { State, Survival } from './state'
+
+export function eat(state: State): State {
+  if (state.survival.health <= 0) return state
+  const index = state.inventory.hand - 1
+  const slot = state.inventory.slots[index]
+  if (!slot || !isFoodId(slot.itemId)) return state
+  const slots = state.inventory.slots.map((item) => (item ? { ...item } : null))
+  slots[index] = slot.count <= 1 ? null : { itemId: slot.itemId, count: slot.count - 1 }
+  const hunger = Math.min(defs.vitals.max, state.survival.hunger + defs.food[slot.itemId])
+  return withSlots({ ...state, survival: { ...state.survival, hunger } }, slots)
+}
 
 export function drink(state: State, riverId: string): State {
   if (state.survival.health <= 0) return state

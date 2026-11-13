@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { place } from '../core/build'
-import { buildingIds, defs, isSeedId, type BuildingId, type CropId } from '../core/defs'
+import { buildingIds, defs, isFoodId, isSeedId, type BuildingId, type CropId } from '../core/defs'
 import {
   canFertilize,
   canHarvest,
@@ -20,7 +20,7 @@ import { handItem, selectSlot } from '../core/inventory'
 import { move } from '../core/move'
 import { applyScene } from '../core/scenes'
 import { createState, type Building, type Merchant, type Rabbit, type River, type State, type Tree } from '../core/state'
-import { drink } from '../core/survive'
+import { drink, eat } from '../core/survive'
 import { tick } from '../core/time'
 import { images } from './assets'
 import { createCamera } from './camera'
@@ -269,6 +269,7 @@ export class WorldScene extends Phaser.Scene {
       return
     }
     if (this.drinkAhead(target)) return
+    if (this.eatHeld(target)) return
     if (this.beginField()) return
     this.offerBuild()
   }
@@ -419,7 +420,16 @@ export class WorldScene extends Phaser.Scene {
     if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
     if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
     if (this.ahead()?.kind === 'river') return 'E키를 눌러 물 마시기'
+    if (!this.ahead() && hand && isFoodId(hand)) return 'E키를 눌러 먹기'
     return null
+  }
+
+  private eatHeld(target: Aim | null) {
+    if (target) return false
+    const itemId = handItem(this.state)?.itemId
+    if (!itemId || !isFoodId(itemId)) return false
+    this.commit(eat(this.state))
+    return true
   }
 
   private drinkAhead(target: Aim | null) {

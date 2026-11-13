@@ -41,6 +41,7 @@ const scenes: Record<string, (state: State) => State> = {
   river,
   hungry,
   thirsty,
+  meal,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -166,6 +167,24 @@ function hungry(state: State): State {
 
 function thirsty(state: State): State {
   return besideRiver(withVitals(state, { thirst: 0 }))
+}
+
+function meal(state: State): State {
+  const stood = stand(state)
+  const foot = footOf(stood)
+  return withVitals(
+    carry(clearSpan(stood, { x: foot.x - 3, y: foot.y - 3, w: 7, h: 7 }), [
+      { itemId: 'meat', count: 1 },
+      { itemId: 'cooked-meat', count: 1 },
+      { itemId: 'flax', count: 1 },
+      { itemId: 'rye', count: 1 },
+      { itemId: 'cabbage', count: 1 },
+      { itemId: 'oat', count: 1 },
+      { itemId: 'wheat', count: 1 },
+      { itemId: 'stone-axe', count: 1 },
+    ]),
+    { hunger: 10 },
+  )
 }
 
 function withVitals(

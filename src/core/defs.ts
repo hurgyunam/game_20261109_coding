@@ -50,6 +50,14 @@ export const cropIds = ['flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
 
 export type CropId = (typeof cropIds)[number]
 
+export const foodIds = ['meat', 'cooked-meat', 'flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
+
+export type FoodId = (typeof foodIds)[number]
+
+export function isFoodId(itemId: string): itemId is FoodId {
+  return (foodIds as readonly string[]).includes(itemId)
+}
+
 export const tradeItemIds = [
   'stone-axe',
   'stone-hammer',
@@ -207,6 +215,15 @@ export const defs = {
     hurt: 1,
     drink: 100,
   },
+  food: {
+    meat: 15,
+    'cooked-meat': 40,
+    flax: 5,
+    rye: 5,
+    cabbage: 5,
+    oat: 5,
+    wheat: 5,
+  } satisfies Record<FoodId, number>,
   calendar: {
     start: 'spring',
     seasonDays: 7,
