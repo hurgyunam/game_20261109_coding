@@ -1,3 +1,4 @@
+import breadUrl from '../../assets/bread.png'
 import cabbageUrl from '../../assets/cabbage.png'
 import cabbageSeedUrl from '../../assets/cabbage-seed.png'
 import campfireUrl from '../../assets/campfire.png'
@@ -12,7 +13,9 @@ import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
 import merchantUrl from '../../assets/merchant.png'
 import oatUrl from '../../assets/oat.png'
+import oatPorridgeUrl from '../../assets/oat-porridge.png'
 import oatSeedUrl from '../../assets/oat-seed.png'
+import ryeBreadUrl from '../../assets/rye-bread.png'
 import ovenUrl from '../../assets/oven.png'
 import playerUrl from '../../assets/player.png'
 import rabbitUrl from '../../assets/rabbit.png'
@@ -47,7 +50,10 @@ export const images = {
   rye: { key: 'rye', url: ryeUrl },
   cabbage: { key: 'cabbage', url: cabbageUrl },
   oat: { key: 'oat', url: oatUrl },
+  'oat-porridge': { key: 'oat-porridge', url: oatPorridgeUrl },
   wheat: { key: 'wheat', url: wheatUrl },
+  bread: { key: 'bread', url: breadUrl },
+  'rye-bread': { key: 'rye-bread', url: ryeBreadUrl },
   fertilizer: { key: 'fertilizer', url: fertilizerUrl },
   'flax-seed': { key: 'flax-seed', url: flaxSeedUrl },
   'rye-seed': { key: 'rye-seed', url: ryeSeedUrl },

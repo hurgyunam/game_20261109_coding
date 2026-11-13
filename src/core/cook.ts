@@ -2,13 +2,11 @@ import { defs } from './defs'
 import { addItem, removeItem, withinLimit, withSlots } from './inventory'
 import type { State } from './state'
 
-export function cook(state: State, campfireId: string): State {
-  const campfire = state.buildings.find(
-    (building) => building.id === campfireId && building.kind === 'campfire',
-  )
-  if (!campfire) return state
-
-  const recipe = defs.cooking.campfire
+export function cook(state: State, buildingId: string, input: string): State {
+  const building = state.buildings.find((item) => item.id === buildingId)
+  if (!building || (building.kind !== 'campfire' && building.kind !== 'oven')) return state
+  const recipe = defs.cooking[building.kind].find((item) => item.input === input)
+  if (!recipe) return state
   const removed = removeItem(state.inventory.slots, recipe.input, recipe.count)
   if (!removed) return state
   const added = addItem(removed, recipe.output, recipe.count)

@@ -29,6 +29,7 @@ body,
 .build-menu,
 .storage,
 .campfire,
+.oven,
 .trade,
 .sleep {
   pointer-events: auto;
@@ -146,6 +147,7 @@ body,
 .build-menu img,
 .storage img,
 .campfire img,
+.oven img,
 .trade img {
   width: 36px;
   height: 36px;
@@ -158,6 +160,7 @@ body,
 .build-menu button,
 .storage button,
 .campfire button,
+.oven button,
 .trade button,
 .sleep button {
   border: 2px solid #3d5344;
@@ -224,6 +227,7 @@ body,
 .build-menu header button,
 .storage header button,
 .campfire header button,
+.oven header button,
 .trade header button {
   padding: 4px 8px;
 }
@@ -329,6 +333,7 @@ body,
 
 .storage,
 .campfire,
+.oven,
 .trade {
   position: absolute;
   top: 16px;
@@ -346,7 +351,8 @@ body,
   width: min(460px, calc(100% - 32px));
 }
 
-.campfire {
+.campfire,
+.oven {
   width: min(280px, calc(100% - 32px));
 }
 
@@ -356,20 +362,25 @@ body,
 
 .storage header,
 .campfire header,
+.oven header,
 .trade header,
 .storage h2,
 .campfire h2,
+.oven h2,
 .trade h2,
 .storage h3,
 .campfire h3,
+.oven h3,
 .storage p,
 .campfire p,
+.oven p,
 .trade p {
   margin: 0;
 }
 
 .storage header,
 .campfire header,
+.oven header,
 .trade header {
   display: flex;
   align-items: center;
@@ -379,6 +390,7 @@ body,
 
 .storage h2,
 .campfire h2,
+.oven h2,
 .trade h2 {
   font-size: 16px;
 }
@@ -432,7 +444,8 @@ body,
   padding: 4px 8px;
 }
 
-.campfire > button {
+.campfire > button,
+.oven > button {
   width: 100%;
   margin-top: 12px;
   padding: 8px 10px;

@@ -1,3 +1,4 @@
+import breadUrl from '../../assets/bread.png'
 import cabbageUrl from '../../assets/cabbage.png'
 import cabbageSeedUrl from '../../assets/cabbage-seed.png'
 import cookedMeatUrl from '../../assets/cooked-meat.png'
@@ -8,7 +9,9 @@ import furUrl from '../../assets/fur.png'
 import logUrl from '../../assets/log.png'
 import meatUrl from '../../assets/meat.png'
 import oatUrl from '../../assets/oat.png'
+import oatPorridgeUrl from '../../assets/oat-porridge.png'
 import oatSeedUrl from '../../assets/oat-seed.png'
+import ryeBreadUrl from '../../assets/rye-bread.png'
 import ryeUrl from '../../assets/rye.png'
 import ryeSeedUrl from '../../assets/rye-seed.png'
 import stoneAxeUrl from '../../assets/stone-axe.png'
@@ -37,7 +40,10 @@ const icons: Partial<Record<ItemId, string>> = {
   rye: ryeUrl,
   cabbage: cabbageUrl,
   oat: oatUrl,
+  'oat-porridge': oatPorridgeUrl,
   wheat: wheatUrl,
+  bread: breadUrl,
+  'rye-bread': ryeBreadUrl,
   fertilizer: fertilizerUrl,
 }
 
@@ -59,7 +65,10 @@ const labels: Record<ItemId, string> = {
   rye: '호밀',
   cabbage: '양배추',
   oat: '귀리',
+  'oat-porridge': '귀리죽',
   wheat: '밀',
+  bread: '빵',
+  'rye-bread': '호밀빵',
   fertilizer: '거름',
 }
 

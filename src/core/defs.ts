@@ -17,6 +17,9 @@ export const itemIds = [
   'cabbage',
   'oat',
   'wheat',
+  'oat-porridge',
+  'bread',
+  'rye-bread',
   'fertilizer',
 ] as const
 
@@ -50,7 +53,18 @@ export const cropIds = ['flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
 
 export type CropId = (typeof cropIds)[number]
 
-export const foodIds = ['meat', 'cooked-meat', 'flax', 'rye', 'cabbage', 'oat', 'wheat'] as const
+export const foodIds = [
+  'meat',
+  'cooked-meat',
+  'flax',
+  'rye',
+  'cabbage',
+  'oat',
+  'wheat',
+  'oat-porridge',
+  'bread',
+  'rye-bread',
+] as const
 
 export type FoodId = (typeof foodIds)[number]
 
@@ -85,6 +99,12 @@ export type CropSeason = {
 
 export type Stack = {
   itemId: ItemId
+  count: number
+}
+
+export type CookingRecipe = {
+  input: ItemId
+  output: ItemId
   count: number
 }
 
@@ -124,6 +144,9 @@ export const defs = {
     cabbage: { weight: 1 },
     oat: { weight: 1 },
     wheat: { weight: 1 },
+    'oat-porridge': { weight: 1 },
+    bread: { weight: 1 },
+    'rye-bread': { weight: 1 },
     fertilizer: { weight: 1 },
   } satisfies Record<ItemId, { weight: number }>,
   drops: {
@@ -190,13 +213,17 @@ export const defs = {
     prices: Record<TradeItemId, number>
   },
   cooking: {
-    campfire: {
-      input: 'meat',
-      output: 'cooked-meat',
-      count: 1,
-    },
+    campfire: [
+      { input: 'meat', output: 'cooked-meat', count: 1 },
+      { input: 'oat', output: 'oat-porridge', count: 1 },
+    ],
+    oven: [
+      { input: 'wheat', output: 'bread', count: 1 },
+      { input: 'rye', output: 'rye-bread', count: 1 },
+    ],
   } satisfies {
-    campfire: { input: ItemId; output: ItemId; count: number }
+    campfire: CookingRecipe[]
+    oven: CookingRecipe[]
   },
   time: {
     startMinute: 6 * 60,
@@ -235,6 +262,9 @@ export const defs = {
     cabbage: 5,
     oat: 5,
     wheat: 5,
+    'oat-porridge': 20,
+    bread: 25,
+    'rye-bread': 20,
   } satisfies Record<FoodId, number>,
   calendar: {
     start: 'spring',

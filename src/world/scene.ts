@@ -107,6 +107,7 @@ export class WorldScene extends Phaser.Scene {
   private holdPaused = false
   private facing = { x: 1, y: 0 }
   private campfireId: string | null = null
+  private ovenId: string | null = null
   private night!: Phaser.GameObjects.Rectangle
   private resting = false
 
@@ -236,6 +237,7 @@ export class WorldScene extends Phaser.Scene {
     this.player.setDepth(this.state.player.y)
     this.shadeNight()
     this.releaseCampfire()
+    this.releaseOven()
     this.syncTradeHint()
     this.syncHouseHint()
     this.syncActionHint()
@@ -740,7 +742,11 @@ export class WorldScene extends Phaser.Scene {
       if (canSleep(this.state.time.minutes)) this.hooks.onBed()
       return
     }
-    if (target.kind === 'oven') return
+    if (target.kind === 'oven') {
+      this.ovenId = target.id
+      this.hooks.onOven(target.id)
+      return
+    }
     if (handItem(this.state)?.itemId !== 'stone-axe') return
     const next = target.kind === 'tree' ? chop(this.state, target.id) : hunt(this.state, target.id)
     this.commit(next)
@@ -847,6 +853,15 @@ export class WorldScene extends Phaser.Scene {
     if (campfire && this.beside(campfire.x, campfire.y, this.buildingSprites.get(campfire.id))) return
     this.campfireId = null
     this.hooks.onCampfireClose()
+  }
+
+  private releaseOven() {
+    const id = this.ovenId
+    if (!id) return
+    const oven = this.state.buildings.find((building) => building.id === id && building.kind === 'oven')
+    if (oven && this.beside(oven.x, oven.y, this.buildingSprites.get(oven.id))) return
+    this.ovenId = null
+    this.hooks.onOvenClose()
   }
 
   private beside(x: number, y: number, sprite?: Phaser.GameObjects.Image) {

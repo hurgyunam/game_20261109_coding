@@ -47,6 +47,8 @@ const scenes: Record<string, (state: State) => State> = {
   lodge,
   bed,
   'bed-season': bedSeason,
+  oven,
+  cooked,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -64,7 +66,13 @@ function fullStore(state: State): State {
 }
 
 function hearth(state: State): State {
-  return placeBuilding(carry(stand(state), [{ itemId: 'meat', count: 1 }]), 'campfire')
+  return placeBuilding(
+    carry(stand(state), [
+      { itemId: 'meat', count: 1 },
+      { itemId: 'oat', count: 1 },
+    ]),
+    'campfire',
+  )
 }
 
 function plot(state: State): State {
@@ -278,6 +286,34 @@ function stand(state: State): State {
   const y = foot.y * tile + tile / 2
   if (x === state.player.x && y === state.player.y) return state
   return { ...state, player: { ...state.player, x, y } }
+}
+
+function oven(state: State): State {
+  return placeBuilding(
+    carry(stand(state), [
+      { itemId: 'wheat', count: 1 },
+      { itemId: 'rye', count: 1 },
+      { itemId: 'flax', count: 1 },
+      { itemId: 'cabbage', count: 1 },
+    ]),
+    'oven',
+  )
+}
+
+function cooked(state: State): State {
+  const stood = stand(state)
+  const foot = footOf(stood)
+  return withVitals(
+    carry(clearSpan(stood, { x: foot.x - 3, y: foot.y - 3, w: 7, h: 7 }), [
+      { itemId: 'oat', count: 1 },
+      { itemId: 'oat-porridge', count: 1 },
+      { itemId: 'wheat', count: 1 },
+      { itemId: 'bread', count: 1 },
+      { itemId: 'rye', count: 1 },
+      { itemId: 'rye-bread', count: 1 },
+    ]),
+    { hunger: 10 },
+  )
 }
 
 function lodge(state: State): State {

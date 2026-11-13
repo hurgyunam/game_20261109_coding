@@ -10,6 +10,7 @@ import { buy, sell } from './core/trade'
 import BuildMenu from './hud/BuildMenu.vue'
 import CampfirePanel from './hud/CampfirePanel.vue'
 import Clock from './hud/Clock.vue'
+import OvenPanel from './hud/OvenPanel.vue'
 import Hotbar from './hud/Hotbar.vue'
 import InventoryPanel from './hud/InventoryPanel.vue'
 import SkillPanel from './hud/SkillPanel.vue'
@@ -26,6 +27,7 @@ const buildOpen = ref(false)
 const buildPlan = ref<BuildingId | null>(null)
 const warehouseId = ref<string | null>(null)
 const campfireId = ref<string | null>(null)
+const ovenId = ref<string | null>(null)
 const merchantId = ref<string | null>(null)
 const bedAsk = ref(0)
 let game: { destroy: (removeCanvas: boolean) => void } | null = null
@@ -45,6 +47,7 @@ onMounted(() => {
       buildOpen.value = true
       warehouseId.value = null
       campfireId.value = null
+      ovenId.value = null
       merchantId.value = null
     },
     onBuildDone: () => {
@@ -53,11 +56,20 @@ onMounted(() => {
     onWarehouse: (id) => {
       warehouseId.value = id
       campfireId.value = null
+      ovenId.value = null
       merchantId.value = null
       buildOpen.value = false
     },
     onCampfire: (id) => {
       campfireId.value = id
+      ovenId.value = null
+      warehouseId.value = null
+      merchantId.value = null
+      buildOpen.value = false
+    },
+    onOven: (id) => {
+      ovenId.value = id
+      campfireId.value = null
       warehouseId.value = null
       merchantId.value = null
       buildOpen.value = false
@@ -66,6 +78,7 @@ onMounted(() => {
       merchantId.value = id
       warehouseId.value = null
       campfireId.value = null
+      ovenId.value = null
       buildOpen.value = false
     },
     onBed: () => {
@@ -73,6 +86,9 @@ onMounted(() => {
     },
     onCampfireClose: () => {
       campfireId.value = null
+    },
+    onOvenClose: () => {
+      ovenId.value = null
     },
     bind: (bound) => {
       api = bound
@@ -103,9 +119,14 @@ function onTransfer(itemId: string, way: TransferWay) {
   api.apply(transfer(state.value, warehouseId.value, itemId, 1, way))
 }
 
-function onCook() {
+function onCook(input: string) {
   if (!state.value || !api || !campfireId.value) return
-  api.apply(cook(state.value, campfireId.value))
+  api.apply(cook(state.value, campfireId.value, input))
+}
+
+function onBake(input: string) {
+  if (!state.value || !api || !ovenId.value) return
+  api.apply(cook(state.value, ovenId.value, input))
 }
 
 function onBuy(itemId: string) {
@@ -157,6 +178,13 @@ function declineSleep() {
       :campfire-id="campfireId"
       @cook="onCook"
       @close="campfireId = null"
+    />
+    <OvenPanel
+      v-if="ovenId"
+      :state="state"
+      :oven-id="ovenId"
+      @cook="onBake"
+      @close="ovenId = null"
     />
     <TradePanel
       v-if="merchantId"
