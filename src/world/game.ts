@@ -5,6 +5,7 @@ import { WorldScene } from './scene'
 
 export type GameApi = {
   apply: (state: State) => void
+  rest: (state: State) => void
   beginBuild: (buildingId: BuildingId) => void
 }
 
@@ -17,6 +18,7 @@ export type GameHooks = {
   onCampfire: (id: string) => void
   onCampfireClose: () => void
   onTrade: (id: string) => void
+  onBed: () => void
   bind: (api: GameApi) => void
 }
 

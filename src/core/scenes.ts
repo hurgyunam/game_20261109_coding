@@ -45,6 +45,8 @@ const scenes: Record<string, (state: State) => State> = {
   sprint,
   spent,
   lodge,
+  bed,
+  'bed-season': bedSeason,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -280,6 +282,29 @@ function stand(state: State): State {
 
 function lodge(state: State): State {
   return placeBuilding(atDay(stand(state), 0), 'house')
+}
+
+function bed(state: State): State {
+  return withVitals(placeBuilding(atClock(stand(state), 0, defs.time.bedtime), 'house'), {
+    hunger: 80,
+    thirst: 70,
+    stamina: 40,
+  })
+}
+
+function bedSeason(state: State): State {
+  return placeBuilding(atClock(stand(state), 6, defs.time.bedtime), 'house')
+}
+
+function atClock(state: State, day: number, minutes: number): State {
+  return {
+    ...state,
+    time: {
+      minutes,
+      day,
+      season: seasonOn(day),
+    },
+  }
 }
 
 function placeBuilding(state: State, kind: BuildingId, logs = 0): State {

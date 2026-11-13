@@ -29,7 +29,8 @@ body,
 .build-menu,
 .storage,
 .campfire,
-.trade {
+.trade,
+.sleep {
   pointer-events: auto;
 }
 
@@ -157,7 +158,8 @@ body,
 .build-menu button,
 .storage button,
 .campfire button,
-.trade button {
+.trade button,
+.sleep button {
   border: 2px solid #3d5344;
   background: rgba(10, 18, 14, 0.92);
   color: #f4f0e4;
@@ -433,6 +435,36 @@ body,
 .campfire > button {
   width: 100%;
   margin-top: 12px;
+  padding: 8px 10px;
+}
+
+.sleep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(320px, calc(100% - 32px));
+  padding: 16px;
+  background: rgba(10, 18, 14, 0.94);
+  border: 2px solid #3d5344;
+  border-radius: 12px;
+}
+
+.sleep p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sleep .choices {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sleep .choices button {
+  flex: 1;
   padding: 8px 10px;
 }
 

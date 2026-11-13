@@ -29,6 +29,8 @@ import { createControlReader, type Action, type Pointer } from './input'
 
 const maxFrameSeconds = 0.1
 const holdRepeatSeconds = 0.2
+const sleepClockMs = 2000
+const sleepWakeMs = 520
 const reachDistance = 120
 const reachDot = 0.6
 const tileSize = defs.map.tile
@@ -106,6 +108,7 @@ export class WorldScene extends Phaser.Scene {
   private facing = { x: 1, y: 0 }
   private campfireId: string | null = null
   private night!: Phaser.GameObjects.Rectangle
+  private resting = false
 
   constructor() {
     super('world')
@@ -161,6 +164,9 @@ export class WorldScene extends Phaser.Scene {
         const sameTime = next.time === time
         this.commit(samePose && sameTime ? next : { ...next, player: pose, time })
       },
+      rest: (next) => {
+        this.beginRest(next)
+      },
       beginBuild: (buildingId) => {
         this.beginBuild(buildingId)
       },
@@ -169,6 +175,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
+    if (this.resting) {
+      this.controls.consume()
+      return
+    }
     if (this.state.survival.health <= 0) {
       this.controls.consume()
       this.tillHint?.setVisible(false)
@@ -726,7 +736,11 @@ export class WorldScene extends Phaser.Scene {
       this.hooks.onTrade(target.id)
       return
     }
-    if (target.kind === 'house' || target.kind === 'oven') return
+    if (target.kind === 'house') {
+      if (canSleep(this.state.time.minutes)) this.hooks.onBed()
+      return
+    }
+    if (target.kind === 'oven') return
     if (handItem(this.state)?.itemId !== 'stone-axe') return
     const next = target.kind === 'tree' ? chop(this.state, target.id) : hunt(this.state, target.id)
     this.commit(next)
@@ -882,16 +896,128 @@ export class WorldScene extends Phaser.Scene {
     return { kind, id, distance }
   }
 
-  private commit(next: State) {
+  private beginRest(next: State) {
+    if (this.resting || this.state.survival.health <= 0) return
+    const from = this.state.time
+    const stamina = this.state.survival.stamina
+    const house = this.sleepHouse()
+    this.resting = true
+    this.houseHint?.setVisible(false)
+    this.tillHint?.setVisible(false)
+    this.commit(
+      {
+        ...this.state,
+        time: next.time,
+        survival: { ...this.state.survival, stamina: next.survival.stamina },
+      },
+      false,
+    )
+    this.enterHouse(from, stamina, house)
+  }
+
+  private sleepHouse() {
+    const aimed = this.houseAhead()
+    const house =
+      aimed ?? this.state.buildings.find((building) => building.kind === 'house') ?? null
+    return house ? (this.buildingSprites.get(house.id) ?? null) : null
+  }
+
+  private enterHouse(
+    from: State['time'],
+    stamina: number,
+    house: Phaser.GameObjects.Image | null,
+  ) {
+    if (!house) {
+      this.rollNight(from, stamina)
+      return
+    }
+    const doorX = house.x
+    const doorY = house.y - house.displayHeight * 0.42
+    if (doorX < this.player.x - 1) this.player.setFlipX(true)
+    else if (doorX > this.player.x + 1) this.player.setFlipX(false)
+    const distance = Math.hypot(doorX - this.player.x, doorY - this.player.y)
+    this.tweens.add({
+      targets: this.player,
+      x: doorX,
+      y: doorY,
+      duration: Math.min(720, Math.max(260, distance * 2.4)),
+      ease: 'Sine.easeInOut',
+      onUpdate: () => this.player.setDepth(this.player.y),
+      onComplete: () => {
+        this.player.setDepth(house.depth - 1)
+        this.tweens.add({
+          targets: this.player,
+          y: house.y - house.displayHeight * 0.62,
+          scaleX: 0.35,
+          scaleY: 0.35,
+          alpha: 0,
+          duration: 380,
+          ease: 'Sine.easeIn',
+          onComplete: () => this.rollNight(from, stamina),
+        })
+      },
+    })
+  }
+
+  private rollNight(from: State['time'], stamina: number) {
+    const travel = forwardMinutes(from.minutes, this.state.time.minutes)
+    const clock = { t: 0 }
+    this.tweens.add({
+      targets: clock,
+      t: 1,
+      duration: sleepClockMs,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        const minutes = wrapMinutes(from.minutes + travel * clock.t)
+        this.night.setAlpha(nightCover(minutes))
+        this.hooks.onState({
+          ...this.state,
+          time: { minutes, day: from.day, season: from.season },
+          survival: { ...this.state.survival, stamina },
+        })
+      },
+      onComplete: () => this.stepOut(),
+    })
+  }
+
+  private stepOut() {
+    this.night.setAlpha(nightCover(this.state.time.minutes))
+    this.player.setDepth(this.state.player.y)
+    this.player.setScale(0.45)
+    this.player.setAlpha(0)
+    this.hooks.onState(this.state)
+    this.tweens.add({
+      targets: this.player,
+      x: this.state.player.x,
+      y: this.state.player.y,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: sleepWakeMs,
+      ease: 'Sine.easeOut',
+      onUpdate: () => this.player.setDepth(this.player.y),
+      onComplete: () => {
+        this.player.setAlpha(1)
+        this.player.setScale(1)
+        this.player.setPosition(this.state.player.x, this.state.player.y)
+        this.player.setDepth(this.state.player.y)
+        this.resting = false
+      },
+    })
+  }
+
+  private commit(next: State, publish = true) {
     if (next === this.state) return
     this.state = next
     this.render(next)
-    this.hooks.onState(next)
+    if (publish) this.hooks.onState(next)
   }
 
   private render(state: State) {
-    this.player.setPosition(state.player.x, state.player.y)
-    this.player.setDepth(state.player.y)
+    if (!this.resting) {
+      this.player.setPosition(state.player.x, state.player.y)
+      this.player.setDepth(state.player.y)
+    }
     this.syncTrees(state)
     this.syncRabbits(state)
     this.syncMerchants(state)
@@ -1153,6 +1279,18 @@ function paintPlot(
   }
   graphics.lineStyle(2, line, 0.95)
   graphics.strokeRect(left + 1, top + 1, Math.max(0, width - 2), Math.max(0, height - 2))
+}
+
+function forwardMinutes(from: number, to: number) {
+  const span = defs.time.dayMinutes
+  const travel = (to - from) % span
+  return travel <= 0 ? travel + span : travel
+}
+
+function wrapMinutes(minutes: number) {
+  const span = defs.time.dayMinutes
+  const rest = minutes % span
+  return rest < 0 ? rest + span : rest
 }
 
 function nightCover(minutes: number) {

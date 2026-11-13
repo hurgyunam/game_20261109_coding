@@ -5,6 +5,7 @@ import { craft } from './core/craft'
 import type { BuildingId } from './core/defs'
 import { transfer, type TransferWay } from './core/inventory'
 import type { State } from './core/state'
+import { sleep } from './core/time'
 import { buy, sell } from './core/trade'
 import BuildMenu from './hud/BuildMenu.vue'
 import CampfirePanel from './hud/CampfirePanel.vue'
@@ -12,6 +13,7 @@ import Clock from './hud/Clock.vue'
 import Hotbar from './hud/Hotbar.vue'
 import InventoryPanel from './hud/InventoryPanel.vue'
 import SkillPanel from './hud/SkillPanel.vue'
+import SleepConfirm from './hud/SleepConfirm.vue'
 import StoragePanel from './hud/StoragePanel.vue'
 import TradePanel from './hud/TradePanel.vue'
 import Vitals from './hud/Vitals.vue'
@@ -25,6 +27,7 @@ const buildPlan = ref<BuildingId | null>(null)
 const warehouseId = ref<string | null>(null)
 const campfireId = ref<string | null>(null)
 const merchantId = ref<string | null>(null)
+const bedAsk = ref(0)
 let game: { destroy: (removeCanvas: boolean) => void } | null = null
 let api: GameApi | null = null
 
@@ -64,6 +67,9 @@ onMounted(() => {
       warehouseId.value = null
       campfireId.value = null
       buildOpen.value = false
+    },
+    onBed: () => {
+      bedAsk.value += 1
     },
     onCampfireClose: () => {
       campfireId.value = null
@@ -111,6 +117,18 @@ function onSell(itemId: string) {
   if (!state.value || !api || !merchantId.value) return
   api.apply(sell(state.value, merchantId.value, itemId))
 }
+
+function onSleep() {
+  if (!state.value || !api) return
+  const next = sleep(state.value)
+  bedAsk.value = 0
+  if (next === state.value) return
+  api.rest(next)
+}
+
+function declineSleep() {
+  bedAsk.value = 0
+}
 </script>
 
 <template>
@@ -148,6 +166,7 @@ function onSell(itemId: string) {
       @sell="onSell"
       @close="merchantId = null"
     />
+    <SleepConfirm v-if="bedAsk > 0" :key="bedAsk" @sleep="onSleep" @decline="declineSleep" />
     <p v-if="buildPlan" class="build-hint" :data-building="buildPlan">
       마우스로 위치를 고르고 클릭하세요. 우클릭으로 취소합니다.
     </p>

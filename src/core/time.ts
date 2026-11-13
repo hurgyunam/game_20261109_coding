@@ -36,6 +36,20 @@ export function canSleep(minutes: number) {
   return clock >= defs.time.bedtime || clock < defs.time.startMinute
 }
 
+export function sleep(state: State): State {
+  if (state.survival.health <= 0 || !canSleep(state.time.minutes)) return state
+  const day = state.time.day + 1
+  return {
+    ...state,
+    survival: { ...state.survival, stamina: defs.stamina.max },
+    time: {
+      minutes: defs.time.startMinute,
+      day,
+      season: seasonOn(day),
+    },
+  }
+}
+
 export function seasonOn(day: number): SeasonId {
   const yearDays = defs.calendar.yearDays
   const dayOfYear = ((day % yearDays) + yearDays) % yearDays
