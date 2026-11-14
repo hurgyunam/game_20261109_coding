@@ -51,6 +51,7 @@ const scenes: Record<string, (state: State) => State> = {
   cooked,
   priority,
   pack,
+  hands,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -408,6 +409,23 @@ function pack(state: State): State {
     merchants: [{ id: 'merchant-pack', ...at(2, 0) }],
     buildings: [warehouse],
   }
+}
+
+function hands(state: State): State {
+  const stood = stand(state)
+  const foot = footOf(stood)
+  return carry(clearSpan(stood, { x: foot.x - 3, y: foot.y - 3, w: 7, h: 7 }), [
+    { itemId: 'stone-axe', count: 1 },
+    { itemId: 'flax-seed', count: 1 },
+    { itemId: 'rye-seed', count: 1 },
+    { itemId: 'cabbage-seed', count: 1 },
+    { itemId: 'oat-seed', count: 1 },
+    { itemId: 'wheat-seed', count: 1 },
+    { itemId: 'flax', count: 1 },
+    { itemId: 'rye', count: 1 },
+    { itemId: 'cabbage', count: 1 },
+    { itemId: 'log', count: 1 },
+  ])
 }
 
 function fillStorage(stacks: readonly Stack[]): Storage {

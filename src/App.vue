@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { cook } from './core/cook'
 import { craft } from './core/craft'
 import type { BuildingId } from './core/defs'
-import { transfer, type TransferWay } from './core/inventory'
+import { assignHand, transfer, type TransferWay } from './core/inventory'
 import type { State } from './core/state'
 import { sleep } from './core/time'
 import { buy, sell } from './core/trade'
@@ -107,6 +107,11 @@ function onCraft(recipeId: string) {
   api.apply(craft(state.value, recipeId))
 }
 
+function onAssign(slot: number, hand: number) {
+  if (!state.value || !api) return
+  api.apply(assignHand(state.value, slot, hand))
+}
+
 function onChoose(buildingId: BuildingId) {
   if (!api) return
   buildOpen.value = false
@@ -162,6 +167,7 @@ function declineSleep() {
       v-if="inventoryOpen"
       :state="state"
       @craft="onCraft"
+      @assign="onAssign"
       @close="inventoryOpen = false"
     />
     <BuildMenu v-if="buildOpen" @choose="onChoose" @close="buildOpen = false" />

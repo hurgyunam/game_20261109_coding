@@ -10,8 +10,11 @@ const props = defineProps<{
 
 defineEmits<{
   craft: [recipeId: string]
+  assign: [slot: number, hand: number]
   close: []
 }>()
+
+const hands = Array.from({ length: defs.inventory.hands }, (_, index) => index + 1)
 
 const carried = computed(() =>
   props.state.inventory.slots.flatMap((slot, index) =>
@@ -45,6 +48,19 @@ const recipes = recipeIds.map((id) => ({
         <span class="index">{{ slot.index }}</span>
         <img :src="itemIcon(slot.itemId)" :alt="itemLabel(slot.itemId)" />
         <span>{{ itemLabel(slot.itemId) }} × {{ slot.count }}</span>
+        <span class="assign">
+          <span>핸드</span>
+          <button
+            v-for="hand in hands"
+            :key="hand"
+            type="button"
+            :data-hand="hand"
+            :aria-label="`핸드 ${hand}`"
+            @click="$emit('assign', slot.index, hand)"
+          >
+            {{ hand }}
+          </button>
+        </span>
       </li>
     </ul>
     <h3>제작</h3>

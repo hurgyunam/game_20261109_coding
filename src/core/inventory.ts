@@ -15,6 +15,22 @@ export function selectSlot(state: State, slot: number): State {
   }
 }
 
+export function assignHand(state: State, slot: number, hand: number): State {
+  if (!Number.isInteger(slot) || !Number.isInteger(hand)) return state
+  if (hand < 1 || hand > defs.inventory.hands) return state
+  const length = state.inventory.slots.length
+  if (slot < 1 || slot > length || hand > length || slot === hand) return state
+  const slots = state.inventory.slots.map((item) => (item ? { ...item } : null))
+  const from = slot - 1
+  const to = hand - 1
+  const moving = slots[from]
+  const staying = slots[to]
+  if (moving === staying) return state
+  slots[from] = staying ?? null
+  slots[to] = moving ?? null
+  return withSlots(state, slots)
+}
+
 export function handItem(state: State): Slot {
   return state.inventory.slots[state.inventory.hand - 1] ?? null
 }
