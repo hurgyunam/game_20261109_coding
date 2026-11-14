@@ -279,18 +279,58 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private interact(target: Aim | null) {
+    if (this.foodApplies(target)) {
+      this.commit(eat(this.state))
+      return
+    }
+    if (target && this.axeApplies(target)) {
+      this.useTarget(target)
+      return
+    }
+    if (this.facingPlace(target)) {
+      this.usePlace(target)
+      return
+    }
     if (this.tillAhead()) return
     if (this.sowAhead()) return
     if (this.fertilizeAhead()) return
     if (this.harvestAhead()) return
-    if (target && this.targetClaims(target)) {
-      this.useTarget(target)
-      return
-    }
-    if (this.drinkAhead(target)) return
-    if (this.eatHeld(target)) return
     if (this.beginField()) return
     this.offerBuild()
+  }
+
+  private foodApplies(target: Aim | null) {
+    const itemId = handItem(this.state)?.itemId
+    if (!itemId || !isFoodId(itemId)) return false
+    return !target || this.facingPlace(target)
+  }
+
+  private axeApplies(target: Aim | null): target is Aim {
+    return (
+      !!target &&
+      handItem(this.state)?.itemId === 'stone-axe' &&
+      (target.kind === 'tree' || target.kind === 'rabbit')
+    )
+  }
+
+  private facingPlace(target: Aim | null): target is Aim {
+    return (
+      !!target &&
+      (target.kind === 'warehouse' ||
+        target.kind === 'campfire' ||
+        target.kind === 'oven' ||
+        target.kind === 'merchant' ||
+        target.kind === 'river' ||
+        target.kind === 'house')
+    )
+  }
+
+  private usePlace(target: Aim) {
+    if (target.kind === 'river') {
+      this.commit(drink(this.state, target.id))
+      return
+    }
+    this.useTarget(target)
   }
 
   private targetClaims(target: Aim) {
@@ -433,6 +473,10 @@ export class WorldScene extends Phaser.Scene {
 
   private actionLabel() {
     if (this.ghost || this.fieldGhost) return null
+    const target = this.ahead()
+    if (this.foodApplies(target)) return 'E키를 눌러 먹기'
+    if (target?.kind === 'tree' && this.axeApplies(target)) return 'E키를 눌러 벌목'
+    if (this.facingPlace(target)) return target.kind === 'river' ? 'E키를 눌러 물 마시기' : null
     const hand = handItem(this.state)?.itemId
     if (hand === 'stone-hoe') {
       if (this.inUntilledField()) return 'E키를 눌러 밭 갈기'
@@ -444,26 +488,7 @@ export class WorldScene extends Phaser.Scene {
     if (feeding && canFertilize(this.state, feeding.tileX, feeding.tileY)) return 'E키를 눌러 거름 뿌리기'
     const reaping = this.harvestTile()
     if (reaping && canHarvest(this.state, reaping.tileX, reaping.tileY)) return 'E키를 눌러 수확'
-    if (hand === 'stone-axe' && this.ahead()?.kind === 'tree') return 'E키를 눌러 벌목'
-    if (this.ahead()?.kind === 'river') return 'E키를 눌러 물 마시기'
-    if (!this.ahead() && hand && isFoodId(hand)) return 'E키를 눌러 먹기'
     return null
-  }
-
-  private eatHeld(target: Aim | null) {
-    if (target) return false
-    const itemId = handItem(this.state)?.itemId
-    if (!itemId || !isFoodId(itemId)) return false
-    this.commit(eat(this.state))
-    return true
-  }
-
-  private drinkAhead(target: Aim | null) {
-    if (target && target.kind !== 'river') return false
-    const river = target?.kind === 'river' ? target : this.ahead()
-    if (river?.kind !== 'river') return false
-    this.commit(drink(this.state, river.id))
-    return true
   }
 
   private tillHintText() {
@@ -778,7 +803,7 @@ export class WorldScene extends Phaser.Scene {
     const hint = this.houseHintText()
     const house = this.houseAhead()
     const sprite = house ? this.buildingSprites.get(house.id) : undefined
-    if (!house || !sprite) {
+    if (!house || !sprite || this.foodApplies(this.ahead())) {
       hint.setVisible(false)
       return
     }
@@ -816,10 +841,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private syncTradeHint() {
+    const faced = this.ahead()
     for (const merchant of this.state.merchants) {
       const sprite = this.merchantSprites.get(merchant.id)
       const hint = this.tradeHint(merchant.id)
-      if (!sprite || !this.beside(merchant.x, merchant.y, sprite)) {
+      const eating =
+        faced?.kind === 'merchant' && faced.id === merchant.id && this.foodApplies(faced)
+      if (!sprite || !this.beside(merchant.x, merchant.y, sprite) || eating) {
         hint.setVisible(false)
         continue
       }

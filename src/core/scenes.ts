@@ -49,6 +49,7 @@ const scenes: Record<string, (state: State) => State> = {
   'bed-season': bedSeason,
   oven,
   cooked,
+  priority,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -66,12 +67,17 @@ function fullStore(state: State): State {
 }
 
 function hearth(state: State): State {
-  return placeBuilding(
-    carry(stand(state), [
-      { itemId: 'meat', count: 1 },
-      { itemId: 'oat', count: 1 },
-    ]),
-    'campfire',
+  return withVitals(
+    placeBuilding(
+      emptyHand(
+        carry(stand(state), [
+          { itemId: 'meat', count: 1 },
+          { itemId: 'oat', count: 1 },
+        ]),
+      ),
+      'campfire',
+    ),
+    { hunger: 50 },
   )
 }
 
@@ -290,14 +296,78 @@ function stand(state: State): State {
 
 function oven(state: State): State {
   return placeBuilding(
-    carry(stand(state), [
-      { itemId: 'wheat', count: 1 },
-      { itemId: 'rye', count: 1 },
-      { itemId: 'flax', count: 1 },
-      { itemId: 'cabbage', count: 1 },
-    ]),
+    emptyHand(
+      carry(stand(state), [
+        { itemId: 'wheat', count: 1 },
+        { itemId: 'rye', count: 1 },
+        { itemId: 'flax', count: 1 },
+        { itemId: 'cabbage', count: 1 },
+      ]),
+    ),
     'oven',
   )
+}
+
+function priority(state: State): State {
+  const stood = stand(atClock(state, 14, defs.time.bedtime))
+  const foot = footOf(stood)
+  const carried = carry(stood, [
+    { itemId: 'flax', count: 12 },
+    { itemId: 'stone-axe', count: 1 },
+    { itemId: 'stone-hammer', count: 1 },
+    { itemId: 'stone-hoe', count: 1 },
+    { itemId: 'rye-seed', count: 1 },
+    { itemId: 'stone-sickle', count: 1 },
+    { itemId: 'fertilizer', count: 1 },
+  ])
+  const tile = defs.map.tile
+  const spot = (dx: number, dy: number) => ({
+    x: (foot.x + dx) * tile + tile / 2,
+    y: (foot.y + dy) * tile + tile / 2,
+  })
+  const south = spot(0, 3)
+  const north = spot(0, -3)
+  const east = spot(3, 0)
+  const west = spot(-3, 0)
+  const southEast = spot(3, 3)
+  const southWest = spot(-3, 3)
+  const northEast = spot(3, -3)
+  const northWest = spot(-3, -3)
+  const buildings: Building[] = [
+    { id: 'warehouse-1', kind: 'warehouse', ...south, storage: stocked(0) },
+    { id: 'campfire-1', kind: 'campfire', ...north },
+    { id: 'oven-1', kind: 'oven', ...east },
+    { id: 'house-1', kind: 'house', ...west },
+  ]
+  const field: Field = {
+    id: 'field-1',
+    x: foot.x + 5,
+    y: foot.y - 1,
+    w: 4,
+    h: 3,
+    tilled: [
+      { x: foot.x + 6, y: foot.y },
+      { x: foot.x + 7, y: foot.y, crop: 'flax', day: 0 },
+    ],
+  }
+  return withVitals(
+    {
+      ...carried,
+      trees: [{ id: 'tree-priority', ...northEast, hits: 0 }],
+      rabbits: [{ id: 'rabbit-priority', ...northWest }],
+      merchants: [{ id: 'merchant-priority', ...southEast }],
+      rivers: [{ id: 'river-priority', ...southWest }],
+      buildings,
+      fields: [field],
+    },
+    { hunger: 10, thirst: 40 },
+  )
+}
+
+function emptyHand(state: State): State {
+  const index = state.inventory.slots.findIndex((slot) => slot === null)
+  if (index < 0 || index + 1 === state.inventory.hand) return state
+  return { ...state, inventory: { ...state.inventory, hand: index + 1 } }
 }
 
 function cooked(state: State): State {
