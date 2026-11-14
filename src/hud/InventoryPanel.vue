@@ -14,7 +14,9 @@ defineEmits<{
 }>()
 
 const carried = computed(() =>
-  props.state.inventory.slots.flatMap((slot) => (slot ? [slot] : [])),
+  props.state.inventory.slots.flatMap((slot, index) =>
+    slot ? [{ itemId: slot.itemId, count: slot.count, index: index + 1 }] : [],
+  ),
 )
 
 const recipes = recipeIds.map((id) => ({
@@ -33,7 +35,14 @@ const recipes = recipeIds.map((id) => ({
     <p class="weight">총중량 {{ state.inventory.weight }} / 한도 {{ state.inventory.limit }}</p>
     <ul class="items">
       <li v-if="carried.length === 0">비어 있음</li>
-      <li v-for="slot in carried" :key="slot.itemId">
+      <li
+        v-for="slot in carried"
+        :key="slot.index"
+        :data-slot="slot.index"
+        :data-item="slot.itemId"
+        :data-count="slot.count"
+      >
+        <span class="index">{{ slot.index }}</span>
         <img :src="itemIcon(slot.itemId)" :alt="itemLabel(slot.itemId)" />
         <span>{{ itemLabel(slot.itemId) }} × {{ slot.count }}</span>
       </li>

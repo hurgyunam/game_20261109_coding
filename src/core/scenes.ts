@@ -50,6 +50,7 @@ const scenes: Record<string, (state: State) => State> = {
   oven,
   cooked,
   priority,
+  pack,
 }
 
 export function applyScene(state: State, name: string | null): State {
@@ -362,6 +363,62 @@ function priority(state: State): State {
     },
     { hunger: 10, thirst: 40 },
   )
+}
+
+function pack(state: State): State {
+  const stood = stand(state)
+  const foot = footOf(stood)
+  const carried = carry(stood, [
+    { itemId: 'stone-axe', count: 1 },
+    { itemId: 'flax-seed', count: 1 },
+    { itemId: 'rye-seed', count: 1 },
+    { itemId: 'cabbage-seed', count: 1 },
+    { itemId: 'oat-seed', count: 1 },
+    { itemId: 'wheat-seed', count: 1 },
+    { itemId: 'flax', count: 1 },
+    { itemId: 'rye', count: 1 },
+    { itemId: 'cabbage', count: 1 },
+  ])
+  const tile = defs.map.tile
+  const at = (dx: number, dy: number) => ({
+    x: (foot.x + dx) * tile + tile / 2,
+    y: (foot.y + dy) * tile + tile / 2,
+  })
+  const warehouse: Building = {
+    id: 'warehouse-1',
+    kind: 'warehouse',
+    ...at(4, 0),
+    storage: fillStorage([
+      { itemId: 'log', count: 1 },
+      { itemId: 'stone-hammer', count: 1 },
+      { itemId: 'stone-hoe', count: 1 },
+      { itemId: 'stone-sickle', count: 1 },
+      { itemId: 'meat', count: 1 },
+      { itemId: 'fur', count: 1 },
+      { itemId: 'cooked-meat', count: 1 },
+      { itemId: 'wheat', count: 1 },
+      { itemId: 'bread', count: 1 },
+      { itemId: 'fertilizer', count: 1 },
+    ]),
+  }
+  return {
+    ...carried,
+    trees: [{ id: 'tree-pack', ...at(1, 0), hits: 0 }],
+    rabbits: [{ id: 'rabbit-pack', ...at(3, 0) }],
+    merchants: [{ id: 'merchant-pack', ...at(2, 0) }],
+    buildings: [warehouse],
+  }
+}
+
+function fillStorage(stacks: readonly Stack[]): Storage {
+  const storage = createStorage()
+  let slots = storage.slots
+  for (const stack of stacks) {
+    const next = addItem(slots, stack.itemId, stack.count)
+    if (!next) return storage
+    slots = next
+  }
+  return { ...storage, slots, weight: weightOf(slots) }
 }
 
 function emptyHand(state: State): State {

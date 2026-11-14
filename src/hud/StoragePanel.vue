@@ -19,10 +19,18 @@ const warehouse = computed(() => {
   return building?.kind === 'warehouse' ? building : null
 })
 
-const carried = computed(() => props.state.inventory.slots.flatMap((slot) => (slot ? [slot] : [])))
+const carried = computed(() =>
+  props.state.inventory.slots.flatMap((slot, index) =>
+    slot ? [{ itemId: slot.itemId, count: slot.count, index: index + 1 }] : [],
+  ),
+)
 
 const stored = computed(() =>
-  warehouse.value ? warehouse.value.storage.slots.flatMap((slot) => (slot ? [slot] : [])) : [],
+  warehouse.value
+    ? warehouse.value.storage.slots.flatMap((slot, index) =>
+        slot ? [{ itemId: slot.itemId, count: slot.count, index: index + 1 }] : [],
+      )
+    : [],
 )
 </script>
 
@@ -42,11 +50,13 @@ const stored = computed(() =>
           <li v-if="carried.length === 0">비어 있음</li>
           <li
             v-for="slot in carried"
-            :key="slot.itemId"
+            :key="slot.index"
             data-side="player"
+            :data-slot="slot.index"
             :data-item="slot.itemId"
             :data-count="slot.count"
           >
+            <span class="index">{{ slot.index }}</span>
             <img :src="itemIcon(slot.itemId)" :alt="itemLabel(slot.itemId)" />
             <span>{{ itemLabel(slot.itemId) }} × {{ slot.count }}</span>
             <button type="button" @click="$emit('transfer', slot.itemId, 'store')">넣기</button>
@@ -62,11 +72,13 @@ const stored = computed(() =>
           <li v-if="stored.length === 0">비어 있음</li>
           <li
             v-for="slot in stored"
-            :key="slot.itemId"
+            :key="slot.index"
             data-side="storage"
+            :data-slot="slot.index"
             :data-item="slot.itemId"
             :data-count="slot.count"
           >
+            <span class="index">{{ slot.index }}</span>
             <img :src="itemIcon(slot.itemId)" :alt="itemLabel(slot.itemId)" />
             <span>{{ itemLabel(slot.itemId) }} × {{ slot.count }}</span>
             <button type="button" @click="$emit('transfer', slot.itemId, 'take')">꺼내기</button>

@@ -253,6 +253,14 @@ body,
   min-height: 28px;
 }
 
+.items .index {
+  min-width: 1.5em;
+  color: #9aaf9c;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
 .recipes {
   display: grid;
   gap: 8px;
@@ -348,7 +356,7 @@ body,
 }
 
 .storage {
-  width: min(460px, calc(100% - 32px));
+  width: min(520px, calc(100% - 32px));
 }
 
 .campfire,
@@ -442,6 +450,8 @@ body,
 .storage .items button {
   margin-left: auto;
   padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .campfire > button,
